@@ -3,7 +3,7 @@ trigger:
 
 variables:
   azureServiceConnectionId: 'aefec5e6-8deb-46c7-aab5-9198d93191df'
-  webAppName: ''
+  webAppName: ''  # <- pon tu nombre de Web App
   environmentName: 'surio'
   projectRoot: $(System.DefaultWorkingDirectory)
   pythonVersion: '3.11'
@@ -14,7 +14,7 @@ stages:
   jobs:
   - job: BuildJob
     pool:
-      name: Default   # <-- USAR TU AGENTE SELF-HOSTED
+      name: Default   # <-- tu agente self-hosted
 
     steps:
     - task: UsePythonVersion@0
@@ -24,34 +24,49 @@ stages:
 
     - script: |
         python -m venv antenv
-        source antenv/bin/activate
+        # Activar virtualenv según OS
+        if [ -f "antenv/bin/activate" ]; then
+            source antenv/bin/activate
+        else
+            antenv\Scripts\activate
+        fi
         python -m pip install --upgrade pip
-        pip install setup
         pip install -r requirements.txt
       workingDirectory: $(projectRoot)
-      displayName: "Install requirements"
+      displayName: "Install Python dependencies"
 
     - task: ArchiveFiles@2
-      displayName: 'Archive files'
+      displayName: 'Archive project files'
       inputs:
         rootFolderOrFile: '$(projectRoot)'
         includeRootFolder: false
         archiveType: zip
-        archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+        archiveFile: '$(Build.ArtifactStagingDirectory)/project.zip'
         replaceExistingArchive: true
+        contents: |
+          **/*.py
+          **/*.txt
+          **/requirements.txt
+          **/manage.py
+          **/proyect/**
+          !**/antenv/**
+          !**/.git/**
+          !**/__pycache__/**
+          !**/bin/**
+          !**/Lib/**
 
-    - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
-      displayName: 'Upload package'
+    - upload: '$(Build.ArtifactStagingDirectory)/project.zip'
+      displayName: 'Upload artifact'
       artifact: drop
 
 - stage: Deploy
-  displayName: 'Deploy Web App'
+  displayName: Deploy Web App
   dependsOn: Build
   condition: succeeded()
   jobs:
   - deployment: DeploymentJob
     pool:
-      name: Default   # <-- TAMBIÉN AQUÍ
+      name: Default
 
     environment: $(environmentName)
     strategy:
@@ -69,5 +84,4 @@ stages:
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appName: $(webAppName)
-              package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
-
+              package: '$(Pipeline.Workspace)/drop/project.zip'
