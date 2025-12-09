@@ -30,29 +30,38 @@ stages:
       workingDirectory: $(projectRoot)
       displayName: "Install Python dependencies"
 
-    # Copiar solo los archivos necesarios para deploy
-    - task: CopyFiles@2
-      inputs:
-        SourceFolder: '$(projectRoot)'
-        Contents: |
-          **/*.py
-          **/requirements.txt
-          **/manage.py
-          **/proyect/**
-          **/templates/**
-          **/static/**
-        TargetFolder: '$(Build.ArtifactStagingDirectory)'
-      displayName: 'Copy files for deployment'
-
-    # Verificar tamaño del artifact (opcional, para debug)
+    # Crear un directorio temporal solo con archivos estrictamente necesarios
     - powershell: |
-        $size = (Get-ChildItem -Recurse '$(Build.ArtifactStagingDirectory)' | Measure-Object -Property Length -Sum).Sum
-        Write-Host "Total artifact size: $($size / 1MB) MB"
-      displayName: 'Check artifact size'
+        $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
+        New-Item -ItemType Directory -Path $deployDir -Force
+        Copy-Item "$(System.DefaultWorkingDirectory)\**\*.py" -Destination $deployDir -Recurse
+        Copy-Item "$(System.DefaultWorkingDirectory)\manage.py" -Destination $deployDir
+        Copy-Item "$(System.DefaultWorkingDirectory)\requirements.txt" -Destination $deployDir
+        Copy-Item "$(System.DefaultWorkingDirectory)\proyect\templates" -Destination $deployDir -Recurse
+        Copy-Item "$(System.DefaultWorkingDirectory)\proyect\static" -Destination $deployDir -Recurse
+      displayName: "Prepare deployment folder"
 
-    - publish: '$(Build.ArtifactStagingDirectory)'
+    # Crear ZIP del artifact
+    - task: ArchiveFiles@2
+      displayName: 'Create deploy ZIP'
+      inputs:
+        rootFolderOrFile: '$(Build.ArtifactStagingDirectory)\deploy'
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: '$(Build.ArtifactStagingDirectory)/deploy.zip'
+        replaceExistingArchive: true
+        advancedCompression: true
+        compressionLevel: '1'  # mínima y rápida
+
+    # Verificar tamaño del ZIP (opcional)
+    - powershell: |
+        $size = (Get-Item '$(Build.ArtifactStagingDirectory)/deploy.zip').Length
+        Write-Host "ZIP artifact size: $($size / 1MB) MB"
+      displayName: 'Check deploy ZIP size'
+
+    - publish: '$(Build.ArtifactStagingDirectory)/deploy.zip'
       artifact: drop
-      displayName: 'Publish artifact'
+      displayName: 'Publish deploy ZIP artifact'
 
 - stage: Deploy
   displayName: Deploy Web App
@@ -78,4 +87,4 @@ stages:
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appName: $(webAppName)
-              package: '$(Pipeline.Workspace)/drop'
+              package: '$(Pipeline.Workspace)/drop/deploy.zip'
