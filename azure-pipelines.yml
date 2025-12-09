@@ -9,6 +9,9 @@ variables:
   pythonVersion: '3.11'
 
 stages:
+# --------------------------
+# Build Stage
+# --------------------------
 - stage: Build
   displayName: Build stage
   jobs:
@@ -62,7 +65,7 @@ stages:
         archiveFile: '$(Build.ArtifactStagingDirectory)/deploy.zip'
         replaceExistingArchive: true
         advancedCompression: true
-        compressionLevel: '1'  # mínima y rápida
+        compressionLevel: '1'
 
     # Verificar tamaño del ZIP (opcional)
     - powershell: |
@@ -74,6 +77,9 @@ stages:
       artifact: drop
       displayName: 'Publish deploy ZIP artifact'
 
+# --------------------------
+# Deploy Stage
+# --------------------------
 - stage: Deploy
   displayName: Deploy Web App
   dependsOn: Build
@@ -82,7 +88,6 @@ stages:
   - deployment: DeploymentJob
     pool:
       name: Default
-
     environment: $(environmentName)
     strategy:
       runOnce:
