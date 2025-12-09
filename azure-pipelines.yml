@@ -3,7 +3,7 @@ trigger:
 
 variables:
   azureServiceConnectionId: 'aefec5e6-8deb-46c7-aab5-9198d93191df'
-  webAppName: ''  # <- pon tu nombre de Web App
+  webAppName: 'ProyectIS2'  # <- pon tu nombre de Web App
   environmentName: 'surio'
   projectRoot: $(System.DefaultWorkingDirectory)
   pythonVersion: '3.11'
@@ -14,7 +14,7 @@ stages:
   jobs:
   - job: BuildJob
     pool:
-      name: Default   # <-- tu agente self-hosted
+      name: Default   # <-- tu agente self-hosted en Windows
 
     steps:
     - task: UsePythonVersion@0
@@ -22,14 +22,10 @@ stages:
         versionSpec: '$(pythonVersion)'
       displayName: 'Use Python $(pythonVersion)'
 
-    - script: |
+    - powershell: |
         python -m venv antenv
-        # Activar virtualenv según OS
-        if [ -f "antenv/bin/activate" ]; then
-            source antenv/bin/activate
-        else
-            antenv\Scripts\activate
-        fi
+        # Activar virtualenv
+        .\antenv\Scripts\Activate.ps1
         python -m pip install --upgrade pip
         pip install -r requirements.txt
       workingDirectory: $(projectRoot)
