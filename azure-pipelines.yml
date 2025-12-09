@@ -17,7 +17,7 @@ stages:
   jobs:
   - job: BuildJob
     pool:
-      name: Azure Pipelines  # tu agente self-hosted en Windows
+      name: Default # tu agente self-hosted en Windows
 
     steps:
     - task: UsePythonVersion@0
