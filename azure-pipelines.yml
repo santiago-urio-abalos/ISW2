@@ -24,36 +24,27 @@ stages:
 
     - powershell: |
         python -m venv antenv
-        # Activar virtualenv
         .\antenv\Scripts\Activate.ps1
         python -m pip install --upgrade pip
         pip install -r requirements.txt
       workingDirectory: $(projectRoot)
       displayName: "Install Python dependencies"
 
-    - task: ArchiveFiles@2
-      displayName: 'Archive project files'
+    # Copiar solo archivos necesarios a ArtifactStagingDirectory
+    - task: CopyFiles@2
       inputs:
-        rootFolderOrFile: '$(projectRoot)'
-        includeRootFolder: false
-        archiveType: zip
-        archiveFile: '$(Build.ArtifactStagingDirectory)/project.zip'
-        replaceExistingArchive: true
-        contents: |
+        SourceFolder: '$(projectRoot)'
+        Contents: |
           **/*.py
-          **/*.txt
           **/requirements.txt
           **/manage.py
           **/proyect/**
-          !**/antenv/**
-          !**/.git/**
-          !**/__pycache__/**
-          !**/bin/**
-          !**/Lib/**
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      displayName: "Copy files for deployment"
 
-    - upload: '$(Build.ArtifactStagingDirectory)/project.zip'
-      displayName: 'Upload artifact'
+    - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: drop
+      displayName: 'Publish artifact'
 
 - stage: Deploy
   displayName: Deploy Web App
@@ -80,4 +71,4 @@ stages:
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appName: $(webAppName)
-              package: '$(Pipeline.Workspace)/drop/project.zip'
+              package: '$(Pipeline.Workspace)/drop'
