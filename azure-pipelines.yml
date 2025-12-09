@@ -30,15 +30,26 @@ stages:
       workingDirectory: $(projectRoot)
       displayName: "Install Python dependencies"
 
-    # Crear un directorio temporal solo con archivos estrictamente necesarios
+    # Preparar carpeta de despliegue solo con archivos necesarios
     - powershell: |
         $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
         New-Item -ItemType Directory -Path $deployDir -Force
+
+        # Copiar archivos Python
         Copy-Item "$(System.DefaultWorkingDirectory)\**\*.py" -Destination $deployDir -Recurse
         Copy-Item "$(System.DefaultWorkingDirectory)\manage.py" -Destination $deployDir
         Copy-Item "$(System.DefaultWorkingDirectory)\requirements.txt" -Destination $deployDir
-        Copy-Item "$(System.DefaultWorkingDirectory)\proyect\templates" -Destination $deployDir -Recurse
-        Copy-Item "$(System.DefaultWorkingDirectory)\proyect\static" -Destination $deployDir -Recurse
+
+        # Copiar templates y static de relecloud si existen
+        $templatesPath = "$(System.DefaultWorkingDirectory)\relecloud\templates"
+        if (Test-Path $templatesPath) {
+            Copy-Item $templatesPath -Destination $deployDir -Recurse
+        }
+
+        $staticPath = "$(System.DefaultWorkingDirectory)\relecloud\static"
+        if (Test-Path $staticPath) {
+            Copy-Item $staticPath -Destination $deployDir -Recurse
+        }
       displayName: "Prepare deployment folder"
 
     # Crear ZIP del artifact
