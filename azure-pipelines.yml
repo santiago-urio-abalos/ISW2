@@ -10,7 +10,7 @@ variables:
 
 stages:
 # --------------------------
-# Build Stage
+# Build Estado
 # --------------------------
 - stage: Build
   displayName: Build stage
