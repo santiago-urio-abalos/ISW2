@@ -3,7 +3,7 @@ trigger:
 
 variables:
   azureServiceConnectionId: 'aefec5e6-8deb-46c7-aab5-9198d93191df'
-  webAppName: 'ProyectIS2'  # <- pon tu nombre de Web App
+  webAppName: 'ProyectIS2'
   environmentName: 'surio'
   projectRoot: $(System.DefaultWorkingDirectory)
   pythonVersion: '3.11'
@@ -14,7 +14,7 @@ stages:
   jobs:
   - job: BuildJob
     pool:
-      name: Default   # <-- tu agente self-hosted en Windows
+      name: Default  # tu agente self-hosted en Windows
 
     steps:
     - task: UsePythonVersion@0
@@ -30,19 +30,32 @@ stages:
       workingDirectory: $(projectRoot)
       displayName: "Install Python dependencies"
 
-    # Copiar solo archivos necesarios a ArtifactStagingDirectory
-    - task: CopyFiles@2
+    # Crear un ZIP solo con archivos necesarios para deploy
+    - task: ArchiveFiles@2
+      displayName: 'Archive deployment files'
       inputs:
-        SourceFolder: '$(projectRoot)'
-        Contents: |
+        rootFolderOrFile: '$(projectRoot)'
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: '$(Build.ArtifactStagingDirectory)/deploy.zip'
+        replaceExistingArchive: true
+        contents: |
           **/*.py
           **/requirements.txt
           **/manage.py
           **/proyect/**
-        TargetFolder: '$(Build.ArtifactStagingDirectory)'
-      displayName: "Copy files for deployment"
+          !**/antenv/**
+          !**/.git/**
+          !**/__pycache__/**
+          !**/bin/**
+          !**/Lib/**
+          !**/db.sqlite3
+          !**/media/**
+          !**/logs/**
+        advancedCompression: true
+        compressionLevel: '1'  # compresión mínima y rápida
 
-    - publish: '$(Build.ArtifactStagingDirectory)'
+    - publish: '$(Build.ArtifactStagingDirectory)/deploy.zip'
       artifact: drop
       displayName: 'Publish artifact'
 
@@ -71,4 +84,4 @@ stages:
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appName: $(webAppName)
-              package: '$(Pipeline.Workspace)/drop'
+              package: '$(Pipeline.Workspace)/drop/deploy.zip'
