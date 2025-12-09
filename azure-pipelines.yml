@@ -73,9 +73,13 @@ stages:
         Write-Host "ZIP artifact size: $($size / 1MB) MB"
       displayName: 'Check deploy ZIP size'
 
-    - publish: '$(Build.ArtifactStagingDirectory)/deploy.zip'
-      artifact: drop
-      displayName: 'Publish deploy ZIP artifact'
+    # Publicar artifact como Pipeline Artifact
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)/deploy.zip'
+        artifact: 'deploy-artifact'
+        publishLocation: 'pipeline'
+      displayName: 'Publish deploy ZIP as pipeline artifact'
 
 # --------------------------
 # Deploy Stage
@@ -103,4 +107,4 @@ stages:
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appName: $(webAppName)
-              package: '$(Pipeline.Workspace)/drop/deploy.zip'
+              package: '$(Pipeline.Workspace)/deploy-artifact/deploy.zip'
