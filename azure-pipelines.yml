@@ -30,32 +30,27 @@ stages:
       workingDirectory: $(projectRoot)
       displayName: "Install Python dependencies"
 
-    # Crear un ZIP solo con archivos necesarios para deploy
-    - task: ArchiveFiles@2
-      displayName: 'Archive deployment files'
+    # Copiar solo los archivos necesarios para deploy
+    - task: CopyFiles@2
       inputs:
-        rootFolderOrFile: '$(projectRoot)'
-        includeRootFolder: false
-        archiveType: zip
-        archiveFile: '$(Build.ArtifactStagingDirectory)/deploy.zip'
-        replaceExistingArchive: true
-        contents: |
+        SourceFolder: '$(projectRoot)'
+        Contents: |
           **/*.py
           **/requirements.txt
           **/manage.py
           **/proyect/**
-          !**/antenv/**
-          !**/.git/**
-          !**/__pycache__/**
-          !**/bin/**
-          !**/Lib/**
-          !**/db.sqlite3
-          !**/media/**
-          !**/logs/**
-        advancedCompression: true
-        compressionLevel: '1'  # compresión mínima y rápida
+          **/templates/**
+          **/static/**
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      displayName: 'Copy files for deployment'
 
-    - publish: '$(Build.ArtifactStagingDirectory)/deploy.zip'
+    # Verificar tamaño del artifact (opcional, para debug)
+    - powershell: |
+        $size = (Get-ChildItem -Recurse '$(Build.ArtifactStagingDirectory)' | Measure-Object -Property Length -Sum).Sum
+        Write-Host "Total artifact size: $($size / 1MB) MB"
+      displayName: 'Check artifact size'
+
+    - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: drop
       displayName: 'Publish artifact'
 
@@ -73,7 +68,6 @@ stages:
       runOnce:
         deploy:
           steps:
-
           - task: UsePythonVersion@0
             inputs:
               versionSpec: '$(pythonVersion)'
@@ -84,4 +78,4 @@ stages:
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appName: $(webAppName)
-              package: '$(Pipeline.Workspace)/drop/deploy.zip'
+              package: '$(Pipeline.Workspace)/drop'
