@@ -6,7 +6,7 @@ variables:
   azureServiceConnectionId: 'aefec5e6-8deb-46c7-aab5-9198d93191df'
   webAppName: ''
   vmImageName: 'ubuntu-latest'
-  environmentName: 'surio'
+  environmentName: 'surio-v2'
   projectRoot: $(System.DefaultWorkingDirectory)
   pythonVersion: '3.11'
 
