@@ -66,15 +66,24 @@ stages:
         archiveFile: '$(Build.ArtifactStagingDirectory)/deploy.zip'
         replaceExistingArchive: true
 
+    # Debug: verificar ZIP antes de publicar
+    - powershell: |
+        if (Test-Path "$(Build.ArtifactStagingDirectory)\deploy.zip") {
+            Write-Host "ZIP artifact exists."
+        } else {
+            Write-Error "ZIP artifact not found!"
+        }
+      displayName: 'Verify ZIP artifact'
+
     # Publicar artifact
     - task: PublishPipelineArtifact@1
       inputs:
-        targetPath: '$(Build.ArtifactStagingDirectory)/deploy.zip'
+        targetPath: '$(Build.ArtifactStagingDirectory)\deploy.zip'
         artifact: 'deploy-artifact'
         publishLocation: 'pipeline'
       displayName: 'Publish deploy artifact'
 
-    # Guardar Build ID en variable para Deploy Stage
+    # Guardar Build ID en variable para Deploy
     - powershell: |
         Write-Host "##vso[task.setvariable variable=BuildIdForDeploy;isOutput=true]$(Build.BuildId)"
       name: SetBuildId
@@ -97,7 +106,7 @@ stages:
         deploy:
           steps:
 
-          # Paso de debug: IDs y job info
+          # Debug: IDs y job info
           - powershell: |
               Write-Host "Build ID: $(Build.BuildId)"
               Write-Host "Pipeline run ID: $(System.PullRequest.PullRequestId)"
