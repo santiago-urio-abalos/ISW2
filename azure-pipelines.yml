@@ -18,6 +18,8 @@ stages:
   - job: BuildJob
     pool:
       name: Default
+      demands:
+        - Agent.Name -equals DESKTOP-31M0L0Q
     steps:
     - task: UsePythonVersion@0
       inputs:
@@ -26,24 +28,25 @@ stages:
 
     - powershell: |
         python -m venv venv
-        # Instala dependencias directamente en la carpeta de despliegue
+        .\venv\Scripts\Activate.ps1
         python -m pip install --upgrade pip
-        python -m pip install -r requirements.txt --target "$(Build.ArtifactStagingDirectory)\deploy"
+        pip install -r requirements.txt
       workingDirectory: $(projectRoot)
-      displayName: 'Install Python dependencies to deploy folder'
+      displayName: 'Install Python dependencies'
 
     - powershell: |
         $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
+        New-Item -ItemType Directory -Path $deployDir -Force
 
-        # Copiar archivos Python y manage.py
-        Copy-Item "$(System.DefaultWorkingDirectory)\**\*.py" -Destination $deployDir -Recurse -Force
-        Copy-Item "$(System.DefaultWorkingDirectory)\manage.py" -Destination $deployDir -Force
+        Copy-Item "$(System.DefaultWorkingDirectory)\\*.py" -Destination $deployDir -Recurse
+        Copy-Item "$(System.DefaultWorkingDirectory)\manage.py" -Destination $deployDir
+        Copy-Item "$(System.DefaultWorkingDirectory)\requirements.txt" -Destination $deployDir
 
-        # Copiar templates y static
         $templatesPath = "$(System.DefaultWorkingDirectory)\relecloud\templates"
-        if (Test-Path $templatesPath) { Copy-Item $templatesPath -Destination $deployDir -Recurse -Force }
+        if (Test-Path $templatesPath) { Copy-Item $templatesPath -Destination $deployDir -Recurse }
+
         $staticPath = "$(System.DefaultWorkingDirectory)\relecloud\static"
-        if (Test-Path $staticPath) { Copy-Item $staticPath -Destination $deployDir -Recurse -Force }
+        if (Test-Path $staticPath) { Copy-Item $staticPath -Destination $deployDir -Recurse }
       displayName: 'Prepare deployment folder'
 
     - task: ArchiveFiles@2
@@ -73,6 +76,8 @@ stages:
   - deployment: DeploymentJob
     pool:
       name: Default
+      demands:
+        - Agent.Name -equals DESKTOP-31M0L0Q
     environment: $(environmentName)
     strategy:
       runOnce:
@@ -85,10 +90,7 @@ stages:
 
           - task: DownloadPipelineArtifact@2
             inputs:
-              buildType: 'specific'  # Permite elegir el build exacto
-              project: $(System.TeamProject)
-              definition: $(System.DefinitionId)
-              buildId: $(Build.BuildId) # Siempre se descarga el artifact del build actual
+              buildType: 'current'
               artifactName: 'deploy-artifact'
               targetPath: '$(Pipeline.Workspace)/deploy-artifact'
             displayName: 'Download deploy artifact'
