@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}
-ReleCloud - {{ destination }}
+ReleCloud - {{ destination.name }}
 {% endblock %}
 
 {% block content %}
@@ -15,14 +15,28 @@ ReleCloud - {{ destination }}
     {% endfor %}
 </ul>
 
+{% if user.is_authenticated %}
+    {% if purchased %}
+        <p>Has comprado este destino.</p>
+        <a class="btn btn-success" href="{% url 'add_review' destination.id %}">Dejar una review</a>
+    {% else %}
+        <form action="{% url 'buy_destination' destination.id %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Comprar este destino</button>
+        </form>
+    {% endif %}
+{% else %}
+    <p>Debes <a href="{% url 'login' %}?next={{ request.path }}">iniciar sesión</a> para comprar o dejar reviews.</p>
+{% endif %}
+
 <h2>Reviews</h2>
 <p>Average rating: {{ average_rating|floatformat:1 }} / 5</p>
-<a href="{% url 'add_review' destination.id %}">Dejar una review</a>
+
 {% if reviews %}
     <ul class="list-group mt-2">
         {% for review in reviews %}
             <li class="list-group-item">
-                <strong>{{ review.author.username }}</strong> 
+                 <strong>{{ review.author.username }}</strong> 
                 rated {{ review.rating }} / 5<br>
                 {{ review.comment }}<br>
                 <small class="text-muted">{{ review.created_at|date:"d M Y H:i" }}</small>
