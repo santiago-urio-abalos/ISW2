@@ -12,7 +12,7 @@ stages:
 # --------------------------
 # Build Stage
 # --------------------------
-stage: Build
+- stage: Build
   displayName: Build Stage
   jobs:
   - job: BuildJob
@@ -77,6 +77,7 @@ stage: Build
     # Debug final
     - powershell: Write-Host "Build stage completed successfully"
       displayName: 'Debug Build Completion'
+
 # --------------------------
 # Deploy Stage
 # --------------------------
@@ -88,25 +89,28 @@ stage: Build
   - deployment: DeploymentJob
     pool:
       name: Default
-      demands:
-        - Agent.Name -equals DESKTOP-31M0L0Q
     environment: $(environmentName)
     strategy:
       runOnce:
         deploy:
           steps:
-          - task: UsePythonVersion@0
-            inputs:
-              versionSpec: '$(pythonVersion)'
-            displayName: 'Use Python version'
 
-          - task: DownloadPipelineArtifact@2
-            inputs:
-              buildType: 'current'
-              artifactName: 'deploy-artifact'
-              targetPath: '$(Pipeline.Workspace)/deploy-artifact'
-            displayName: 'Download deploy artifact'
+          # Paso de debug: IDs y job info
+          - powershell: |
+              Write-Host "Build ID: $(Build.BuildId)"
+              Write-Host "Pipeline run ID: $(System.PullRequest.PullRequestId)"
+              Write-Host "Job name: $(Agent.JobName)"
+            displayName: 'Check IDs'
 
+          # Descarga automática del artifact del Build stage
+          - download: current
+            displayName: 'Download artifacts from Build stage'
+
+          # Verifica que el artifact se descargó
+          - powershell: dir $(Pipeline.Workspace) -Recurse
+            displayName: 'List workspace contents'
+
+          # Deploy a Azure Web App
           - task: AzureWebApp@1
             displayName: 'Deploy Azure Web App'
             inputs:
