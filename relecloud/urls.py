@@ -13,4 +13,6 @@ urlpatterns = [
     path('destination/<int:pk>/delete', views.DestinationDeleteView.as_view(), name='destination_confirm_delete'),
     path('cruise/<int:pk>', views.CruiseDetailView.as_view(), name='cruise_detail'),
     path('info_request', views.InfoRequestCreate.as_view(), name='info_request'),
+    path('destination/<int:pk>/', views.DestinationDetailView.as_view(), name='destination_detail'),
+    path('destination/<int:destination_id>/review/', views.add_review, name='add_review'),
 ]
