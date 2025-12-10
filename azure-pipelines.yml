@@ -12,43 +12,51 @@ stages:
 # --------------------------
 # Build Stage
 # --------------------------
-- stage: Build
+stage: Build
   displayName: Build Stage
   jobs:
   - job: BuildJob
     pool:
       name: Default
-      demands:
-        - Agent.Name -equals DESKTOP-31M0L0Q
     steps:
     - task: UsePythonVersion@0
       inputs:
         versionSpec: '$(pythonVersion)'
       displayName: 'Use Python $(pythonVersion)'
 
-    - powershell: |
-        python -m venv venv
-        .\venv\Scripts\Activate.ps1
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-      workingDirectory: $(projectRoot)
-      displayName: 'Install Python dependencies'
-
+    # Instalar dependencias directamente en carpeta deploy
     - powershell: |
         $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
         New-Item -ItemType Directory -Path $deployDir -Force
 
-        Copy-Item "$(System.DefaultWorkingDirectory)\\*.py" -Destination $deployDir -Recurse
-        Copy-Item "$(System.DefaultWorkingDirectory)\manage.py" -Destination $deployDir
-        Copy-Item "$(System.DefaultWorkingDirectory)\requirements.txt" -Destination $deployDir
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements.txt --target $deployDir
+      workingDirectory: $(projectRoot)
+      displayName: 'Install Python dependencies to deploy folder'
 
+    # Copiar archivos Python y manage.py
+    - powershell: |
+        $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
+        Get-ChildItem -Path "$(System.DefaultWorkingDirectory)" -Recurse -Filter *.py | ForEach-Object {
+            Copy-Item $_.FullName -Destination $deployDir -Force
+        }
+        Copy-Item "$(System.DefaultWorkingDirectory)\manage.py" -Destination $deployDir -Force
+      displayName: 'Copy Python files'
+
+    # Copiar templates y static si existen
+    - powershell: |
+        $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
         $templatesPath = "$(System.DefaultWorkingDirectory)\relecloud\templates"
-        if (Test-Path $templatesPath) { Copy-Item $templatesPath -Destination $deployDir -Recurse }
-
+        if (Test-Path $templatesPath) { Copy-Item $templatesPath -Destination $deployDir -Recurse -Force }
         $staticPath = "$(System.DefaultWorkingDirectory)\relecloud\static"
-        if (Test-Path $staticPath) { Copy-Item $staticPath -Destination $deployDir -Recurse }
-      displayName: 'Prepare deployment folder'
+        if (Test-Path $staticPath) { Copy-Item $staticPath -Destination $deployDir -Recurse -Force }
+      displayName: 'Copy templates and static'
 
+    # Debug: listar contenido de carpeta deploy
+    - powershell: dir "$(Build.ArtifactStagingDirectory)\deploy" -Recurse
+      displayName: 'Debug deploy folder'
+
+    # Crear ZIP del artifact
     - task: ArchiveFiles@2
       displayName: 'Create deploy ZIP'
       inputs:
@@ -58,6 +66,7 @@ stages:
         archiveFile: '$(Build.ArtifactStagingDirectory)/deploy.zip'
         replaceExistingArchive: true
 
+    # Publicar artifact
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)/deploy.zip'
@@ -65,6 +74,9 @@ stages:
         publishLocation: 'pipeline'
       displayName: 'Publish deploy artifact'
 
+    # Debug final
+    - powershell: Write-Host "Build stage completed successfully"
+      displayName: 'Debug Build Completion'
 # --------------------------
 # Deploy Stage
 # --------------------------
