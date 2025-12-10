@@ -1,107 +1,71 @@
+# Python to Linux Web App on Azure
 trigger:
 - main
 
 variables:
   azureServiceConnectionId: 'aefec5e6-8deb-46c7-aab5-9198d93191df'
-  webAppName: 'ProyectIS2'
-  environmentName: 'surio-v2'
+  webAppName: ''
+  vmImageName: 'ubuntu-latest'
+  environmentName: 'surio'
   projectRoot: $(System.DefaultWorkingDirectory)
   pythonVersion: '3.11'
 
 stages:
-# --------------------------
-# Build Stage
-# --------------------------
 - stage: Build
   displayName: Build stage
   jobs:
   - job: BuildJob
     pool:
-      name: Default
-
+      vmImage: $(vmImageName)
     steps:
     - task: UsePythonVersion@0
       inputs:
         versionSpec: '$(pythonVersion)'
       displayName: 'Use Python $(pythonVersion)'
 
-    - powershell: |
+    - script: |
         python -m venv antenv
-        .\antenv\Scripts\Activate.ps1
+        source antenv/bin/activate
         python -m pip install --upgrade pip
         pip install -r requirements.txt
       workingDirectory: $(projectRoot)
-      displayName: "Install Python dependencies"
+      displayName: "Install requirements"
 
-    # Preparar carpeta de despliegue
-    - powershell: |
-        $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
-        New-Item -ItemType Directory -Path $deployDir -Force
-
-        Copy-Item "$(System.DefaultWorkingDirectory)\**\*.py" -Destination $deployDir -Recurse
-        Copy-Item "$(System.DefaultWorkingDirectory)\manage.py" -Destination $deployDir
-        Copy-Item "$(System.DefaultWorkingDirectory)\requirements.txt" -Destination $deployDir
-
-        # Copiar templates y static
-        $templatesPath = "$(System.DefaultWorkingDirectory)\relecloud\templates"
-        if (Test-Path $templatesPath) { Copy-Item $templatesPath -Destination $deployDir -Recurse }
-
-        $staticPath = "$(System.DefaultWorkingDirectory)\relecloud\static"
-        if (Test-Path $staticPath) { Copy-Item $staticPath -Destination $deployDir -Recurse }
-      displayName: "Prepare deployment folder"
-
-    # Crear ZIP del artifact
     - task: ArchiveFiles@2
-      displayName: 'Create deploy ZIP'
+      displayName: 'Archive files'
       inputs:
-        rootFolderOrFile: '$(Build.ArtifactStagingDirectory)\deploy'
+        rootFolderOrFile: '$(projectRoot)'
         includeRootFolder: false
         archiveType: zip
-        archiveFile: '$(Build.ArtifactStagingDirectory)/deploy.zip'
+        archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
         replaceExistingArchive: true
-        advancedCompression: true
-        compressionLevel: '1'
 
-    # Publicar artifact
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Build.ArtifactStagingDirectory)/deploy.zip'
-        artifact: 'deploy-artifact'
-        publishLocation: 'pipeline'
-      displayName: 'Publish deploy ZIP as pipeline artifact'
+    - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+      displayName: 'Upload package'
+      artifact: drop
 
-# --------------------------
-# Deploy Stage
-# --------------------------
 - stage: Deploy
-  displayName: Deploy Web App
+  displayName: 'Deploy Web App'
   dependsOn: Build
   condition: succeeded()
   jobs:
   - deployment: DeploymentJob
     pool:
-      name: Default
+      vmImage: $(vmImageName)
     environment: $(environmentName)
     strategy:
       runOnce:
         deploy:
           steps:
+
           - task: UsePythonVersion@0
             inputs:
               versionSpec: '$(pythonVersion)'
             displayName: 'Use Python version'
-
-          # Descargar artifact publicado en el Build actual
-          - task: DownloadPipelineArtifact@2
-            inputs:
-              buildType: 'current'
-              artifactName: 'deploy-artifact'
-              targetPath: '$(Pipeline.Workspace)/deploy-artifact'
-            displayName: 'Download deploy artifact'
 
           - task: AzureWebApp@1
             displayName: 'Deploy Azure Web App'
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appName: $(webAppName)
-              package: '$(Pipeline.Workspace)/deploy-artifact/deploy.zip'
+              package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
