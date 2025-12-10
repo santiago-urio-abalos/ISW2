@@ -74,9 +74,11 @@ stages:
         publishLocation: 'pipeline'
       displayName: 'Publish deploy artifact'
 
-    # Debug final
-    - powershell: Write-Host "Build stage completed successfully"
-      displayName: 'Debug Build Completion'
+    # Guardar Build ID en variable para Deploy Stage
+    - powershell: |
+        Write-Host "##vso[task.setvariable variable=BuildIdForDeploy;isOutput=true]$(Build.BuildId)"
+      name: SetBuildId
+      displayName: 'Set Build ID for Deploy'
 
 # --------------------------
 # Deploy Stage
@@ -102,12 +104,21 @@ stages:
               Write-Host "Job name: $(Agent.JobName)"
             displayName: 'Check IDs'
 
-          # Descarga automática del artifact del Build stage
-          - download: current
-            displayName: 'Download artifacts from Build stage'
+          # Descargar artifact usando Build ID específico
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              buildType: 'specific'
+              project: $(System.TeamProject)
+              pipeline: $(Build.DefinitionId)
+              buildVersionToDownload: 'specific'
+              specificBuildWithTriggering: false
+              buildId: $(BuildIdForDeploy)
+              artifactName: 'deploy-artifact'
+              targetPath: '$(Pipeline.Workspace)/deploy-artifact'
+            displayName: 'Download deploy artifact (specific build)'
 
           # Verifica que el artifact se descargó
-          - powershell: dir $(Pipeline.Workspace) -Recurse
+          - powershell: dir $(Pipeline.Workspace)/deploy-artifact -Recurse
             displayName: 'List workspace contents'
 
           # Deploy a Azure Web App
