@@ -5,7 +5,7 @@ from django.views import generic
 from django.contrib.messages.views import SuccessMessageMixin
 from reviews.models import Review  # Importamos los reviews
 from django.views.generic import DetailView
-from .models import Destination, Cruise
+from .models import Destination, Cruise, Purchase
 from reviews.models import Review
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404, redirect
@@ -14,6 +14,7 @@ from reviews.forms import ReviewForm
 from .models import Destination
 from relecloud.models import Cruise
 from reviews.forms import ReviewForm  # si tienes un formulario
+
 
 # Vistas básicas
 def index(request):
@@ -35,10 +36,20 @@ class DestinationDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        destination = self.object
+        user = self.request.user
+
         # Todas las reviews de este destino
-        reviews = Review.objects.filter(destination=self.object)
+        reviews = Review.objects.filter(destination=destination)
         context['reviews'] = reviews
         context['average_rating'] = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+
+        # Comprobamos si el usuario ha comprado el destino
+        purchased = False
+        if user.is_authenticated:
+            purchased = Purchase.objects.filter(user=user, destination=destination).exists()
+        context['purchased'] = purchased
+
         return context
 
 
@@ -83,10 +94,11 @@ class DestinationDeleteView(generic.DeleteView):
 
 
 @login_required
+@login_required
 def add_review(request, destination_id):
-    destination = get_object_or_404(Destination, id=destination_id)
+    destination = get_object_or_404(Destination, pk=destination_id)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = ReviewForm(request.POST)
         if form.is_valid():
             review = form.save(commit=False)
@@ -98,4 +110,17 @@ def add_review(request, destination_id):
         form = ReviewForm()
 
     return render(request, 'reviews/add_review.html', {'form': form, 'destination': destination})
+
+
+
+@login_required
+def buy_destination(request, destination_id):
+    destination = get_object_or_404(Destination, id=destination_id)
+    user = request.user
+
+    # Evitar compras duplicadas
+    if not Purchase.objects.filter(user=user, destination=destination).exists():
+        Purchase.objects.create(user=user, destination=destination)
+
+    return redirect('destination_detail', pk=destination.id)
 
