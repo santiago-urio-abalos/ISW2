@@ -10,14 +10,14 @@ variables:
 
 stages:
 # --------------------------
-# Build Stages
+# Build Stage
 # --------------------------
 - stage: Build
   displayName: Build stage
   jobs:
   - job: BuildJob
     pool:
-      name: Default # tu agente self-hosted en Windows
+      name: Default
 
     steps:
     - task: UsePythonVersion@0
@@ -33,26 +33,21 @@ stages:
       workingDirectory: $(projectRoot)
       displayName: "Install Python dependencies"
 
-    # Preparar carpeta de despliegue solo con archivos necesarios
+    # Preparar carpeta de despliegue
     - powershell: |
         $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
         New-Item -ItemType Directory -Path $deployDir -Force
 
-        # Copiar archivos Python
         Copy-Item "$(System.DefaultWorkingDirectory)\**\*.py" -Destination $deployDir -Recurse
         Copy-Item "$(System.DefaultWorkingDirectory)\manage.py" -Destination $deployDir
         Copy-Item "$(System.DefaultWorkingDirectory)\requirements.txt" -Destination $deployDir
 
-        # Copiar templates y static de relecloud si existen
+        # Copiar templates y static
         $templatesPath = "$(System.DefaultWorkingDirectory)\relecloud\templates"
-        if (Test-Path $templatesPath) {
-            Copy-Item $templatesPath -Destination $deployDir -Recurse
-        }
+        if (Test-Path $templatesPath) { Copy-Item $templatesPath -Destination $deployDir -Recurse }
 
         $staticPath = "$(System.DefaultWorkingDirectory)\relecloud\static"
-        if (Test-Path $staticPath) {
-            Copy-Item $staticPath -Destination $deployDir -Recurse
-        }
+        if (Test-Path $staticPath) { Copy-Item $staticPath -Destination $deployDir -Recurse }
       displayName: "Prepare deployment folder"
 
     # Crear ZIP del artifact
@@ -67,13 +62,7 @@ stages:
         advancedCompression: true
         compressionLevel: '1'
 
-    # Verificar tamaño del ZIP (opcional)
-    - powershell: |
-        $size = (Get-Item '$(Build.ArtifactStagingDirectory)/deploy.zip').Length
-        Write-Host "ZIP artifact size: $($size / 1MB) MB"
-      displayName: 'Check deploy ZIP size'
-
-    # Publicar artifact como Pipeline Artifact
+    # Publicar artifact
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)/deploy.zip'
@@ -101,6 +90,14 @@ stages:
             inputs:
               versionSpec: '$(pythonVersion)'
             displayName: 'Use Python version'
+
+          # Descargar artifact publicado en el Build actual
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              buildType: 'current'
+              artifactName: 'deploy-artifact'
+              targetPath: '$(Pipeline.Workspace)/deploy-artifact'
+            displayName: 'Download deploy artifact'
 
           - task: AzureWebApp@1
             displayName: 'Deploy Azure Web App'
