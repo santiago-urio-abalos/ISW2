@@ -3,6 +3,7 @@ from django.urls import reverse_lazy
 from . import models
 from django.views import generic
 from django.contrib.messages.views import SuccessMessageMixin
+<<<<<<< HEAD
 from reviews.models import Review  # Importamos los reviews
 from django.views.generic import DetailView
 from .models import Destination, Cruise, Purchase
@@ -14,6 +15,9 @@ from reviews.forms import ReviewForm
 from .models import Destination
 from relecloud.models import Cruise
 from reviews.forms import ReviewForm  # si tienes un formulario
+=======
+from django.db.models import Count, Avg
+>>>>>>> efece17a (PBI 1: Implementar cálculo de popularidad de destinos basado en reviews)
 
 
 # Vistas básicas
@@ -24,8 +28,13 @@ def about(request):
     return render(request, 'about.html')
 
 def destinations(request):
-    all_destinations = models.Destination.objects.all()
-    return render(request, 'destinations.html', { 'destinations': all_destinations})
+    # Calcular popularidad basada en número de reviews y rating promedio
+    all_destinations = models.Destination.objects.annotate(
+        review_count=Count('reviews'),
+        avg_rating=Avg('reviews__rating')
+    ).order_by('-review_count', '-avg_rating')
+    
+    return render(request, 'destinations.html', {'destinations': all_destinations})
 
 
 
