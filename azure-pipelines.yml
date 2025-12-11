@@ -9,73 +9,76 @@ variables:
   pythonVersion: '3.11'
 
 stages:
-# --------------------------
-# Build Stage
-# --------------------------
+
+# ===============================================================
+# BUILD STAGE
+# ===============================================================
 - stage: Build
   displayName: Build Stage
   jobs:
   - job: BuildJob
     pool:
       name: Default
+      demands:
+        - Agent.Name -equals DESKTOP-31M0L0Q   # Fuerza usar tu agente
+
     steps:
+
+    # ----------------- Python version -------------------
     - task: UsePythonVersion@0
       inputs:
         versionSpec: '$(pythonVersion)'
       displayName: 'Use Python $(pythonVersion)'
 
-    # Instalar dependencias directamente en carpeta deploy
+    # ----------------- Install Dependencies -------------------
+    - powershell: |
+        python -m venv venv
+        .\venv\Scripts\Activate.ps1
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+      workingDirectory: $(projectRoot)
+      displayName: 'Install Python dependencies'
+
+    # ----------------- Prepare deployment folder -------------------
     - powershell: |
         $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
         New-Item -ItemType Directory -Path $deployDir -Force
 
-        python -m pip install --upgrade pip
-        python -m pip install -r requirements.txt --target $deployDir
-      workingDirectory: $(projectRoot)
-      displayName: 'Install Python dependencies to deploy folder'
+        Write-Host "Copiando archivos .py..."
+        Get-ChildItem -Path "$(System.DefaultWorkingDirectory)" -Recurse -Include *.py | Copy-Item -Destination $deployDir -Force
 
-    # Copiar archivos Python y manage.py
-    - powershell: |
-        $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
-        Get-ChildItem -Path "$(System.DefaultWorkingDirectory)" -Recurse -Filter *.py | ForEach-Object {
-            Copy-Item $_.FullName -Destination $deployDir -Force
-        }
+        Write-Host "Copiando manage.py y requirements.txt..."
         Copy-Item "$(System.DefaultWorkingDirectory)\manage.py" -Destination $deployDir -Force
-      displayName: 'Copy Python files'
+        Copy-Item "$(System.DefaultWorkingDirectory)\requirements.txt" -Destination $deployDir -Force
 
-    # Copiar templates y static si existen
-    - powershell: |
-        $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
+        Write-Host "Copiando templates..."
         $templatesPath = "$(System.DefaultWorkingDirectory)\relecloud\templates"
-        if (Test-Path $templatesPath) { Copy-Item $templatesPath -Destination $deployDir -Recurse -Force }
+        if (Test-Path $templatesPath) {
+            Copy-Item $templatesPath -Destination $deployDir -Recurse -Force
+        }
+
+        Write-Host "Copiando static..."
         $staticPath = "$(System.DefaultWorkingDirectory)\relecloud\static"
-        if (Test-Path $staticPath) { Copy-Item $staticPath -Destination $deployDir -Recurse -Force }
-      displayName: 'Copy templates and static'
+        if (Test-Path $staticPath) {
+            Copy-Item $staticPath -Destination $deployDir -Recurse -Force
+        }
 
-    # Debug: listar contenido de carpeta deploy
-    - powershell: dir "$(Build.ArtifactStagingDirectory)\deploy" -Recurse
-      displayName: 'Debug deploy folder'
+        Write-Host "Contenido final de deploy:"
+        Get-ChildItem $deployDir -Recurse
 
-    # Crear ZIP del artifact
+      displayName: 'Prepare deployment folder'
+
+    # ----------------- Zip the folder -------------------
     - task: ArchiveFiles@2
       displayName: 'Create deploy ZIP'
       inputs:
         rootFolderOrFile: '$(Build.ArtifactStagingDirectory)\deploy'
         includeRootFolder: false
         archiveType: zip
-        archiveFile: '$(Build.ArtifactStagingDirectory)/deploy.zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)\deploy.zip'
         replaceExistingArchive: true
 
-    # Debug: verificar ZIP antes de publicar
-    - powershell: |
-        if (Test-Path "$(Build.ArtifactStagingDirectory)\deploy.zip") {
-            Write-Host "ZIP artifact exists."
-        } else {
-            Write-Error "ZIP artifact not found!"
-        }
-      displayName: 'Verify ZIP artifact'
-
-    # Publicar artifact
+    # ----------------- Publish artifact -------------------
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)\deploy.zip'
@@ -83,57 +86,43 @@ stages:
         publishLocation: 'pipeline'
       displayName: 'Publish deploy artifact'
 
-    # Guardar Build ID en variable para Deploy
-    - powershell: |
-        Write-Host "##vso[task.setvariable variable=BuildIdForDeploy;isOutput=true]$(Build.BuildId)"
-      name: SetBuildId
-      displayName: 'Set Build ID for Deploy'
-
-# --------------------------
-# Deploy Stage
-# --------------------------
+# ===============================================================
+# DEPLOY STAGE
+# ===============================================================
 - stage: Deploy
   displayName: Deploy Web App
   dependsOn: Build
   condition: succeeded()
+
   jobs:
   - deployment: DeploymentJob
     pool:
       name: Default
+      demands:
+        - Agent.Name -equals DESKTOP-31M0L0Q
+
     environment: $(environmentName)
+
     strategy:
       runOnce:
         deploy:
           steps:
 
-          # Debug: IDs y job info
-          - powershell: |
-              Write-Host "Build ID: $(Build.BuildId)"
-              Write-Host "Pipeline run ID: $(System.PullRequest.PullRequestId)"
-              Write-Host "Job name: $(Agent.JobName)"
-            displayName: 'Check IDs'
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(pythonVersion)'
+            displayName: 'Use Python version'
 
-          # Descargar artifact usando Build ID específico
           - task: DownloadPipelineArtifact@2
             inputs:
-              buildType: 'specific'
-              project: $(System.TeamProject)
-              pipeline: $(Build.DefinitionId)
-              buildVersionToDownload: 'specific'
-              specificBuildWithTriggering: false
-              buildId: $(BuildIdForDeploy)
+              buildType: 'current'
               artifactName: 'deploy-artifact'
-              targetPath: '$(Pipeline.Workspace)/deploy-artifact'
-            displayName: 'Download deploy artifact (specific build)'
+              targetPath: '$(Pipeline.Workspace)\deploy-artifact'
+            displayName: 'Download deploy artifact'
 
-          # Verifica que el artifact se descargó
-          - powershell: dir $(Pipeline.Workspace)/deploy-artifact -Recurse
-            displayName: 'List workspace contents'
-
-          # Deploy a Azure Web App
           - task: AzureWebApp@1
             displayName: 'Deploy Azure Web App'
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appName: $(webAppName)
-              package: '$(Pipeline.Workspace)/deploy-artifact/deploy.zip'
+              package: '$(Pipeline.Workspace)\deploy-artifact\deploy.zip'
