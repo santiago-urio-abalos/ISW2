@@ -36,7 +36,7 @@ stages:
         pip install -r requirements.txt
         python manage.py collectstatic --noinput
       displayName: "Install dependencies & collect static"
-      workingDirectory: $(System.DefaultWorkingDirectory)
+      workingDirectory: "$(Build.SourcesDirectory)"
 
     # Create deploy folder with only needed files
     - powershell: |
