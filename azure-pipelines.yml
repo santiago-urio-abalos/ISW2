@@ -5,7 +5,6 @@ variables:
   azureServiceConnectionId: 'aefec5e6-8deb-46c7-aab5-9198d93191df'
   webAppName: 'NewHope'
   environmentName: 'surio-v2'
-  projectRoot: $(System.DefaultWorkingDirectory)
   pythonVersion: '3.11'
 
 stages:
@@ -20,57 +19,44 @@ stages:
     pool:
       name: Default
       demands:
-        - Agent.Name -equals DESKTOP-31M0L0Q   # Fuerza usar tu agente
+        - Agent.Name -equals DESKTOP-31M0L0Q
 
     steps:
 
-    # ----------------- Python version -------------------
     - task: UsePythonVersion@0
       inputs:
         versionSpec: '$(pythonVersion)'
-      displayName: 'Use Python $(pythonVersion)'
+      displayName: "Use Python $(pythonVersion)"
 
-    # ----------------- Install Dependencies -------------------
+    # Install dependencies only for build verification
     - powershell: |
         python -m venv venv
         .\venv\Scripts\Activate.ps1
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-      workingDirectory: $(projectRoot)
-      displayName: 'Install Python dependencies'
+        python manage.py collectstatic --noinput
+      displayName: "Install dependencies & collect static"
+      workingDirectory: $(System.DefaultWorkingDirectory)
 
-    # ----------------- Prepare deployment folder -------------------
+    # Create deploy folder with only needed files
     - powershell: |
         $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
         New-Item -ItemType Directory -Path $deployDir -Force
 
-        Write-Host "Copiando archivos .py..."
-        Get-ChildItem -Path "$(System.DefaultWorkingDirectory)" -Recurse -Include *.py | Copy-Item -Destination $deployDir -Force
+        Write-Host "📁 Copiando proyecto Django real al deploy..."
+        $include = @("relecloud", "reviews", "proyect", "static", "staticfiles", "*.py", "manage.py", "requirements.txt")
 
-        Write-Host "Copiando manage.py y requirements.txt..."
-        Copy-Item "$(System.DefaultWorkingDirectory)\manage.py" -Destination $deployDir -Force
-        Copy-Item "$(System.DefaultWorkingDirectory)\requirements.txt" -Destination $deployDir -Force
-
-        Write-Host "Copiando templates..."
-        $templatesPath = "$(System.DefaultWorkingDirectory)\relecloud\templates"
-        if (Test-Path $templatesPath) {
-            Copy-Item $templatesPath -Destination $deployDir -Recurse -Force
+        foreach ($item in $include) {
+            Get-ChildItem -Path "$(System.DefaultWorkingDirectory)\$item" -Recurse -ErrorAction SilentlyContinue |
+                Copy-Item -Destination $deployDir -Recurse -Force -ErrorAction SilentlyContinue
         }
 
-        Write-Host "Copiando static..."
-        $staticPath = "$(System.DefaultWorkingDirectory)\relecloud\static"
-        if (Test-Path $staticPath) {
-            Copy-Item $staticPath -Destination $deployDir -Recurse -Force
-        }
-
-        Write-Host "Contenido final de deploy:"
+        Write-Host "✔ Contenido final de deploy:"
         Get-ChildItem $deployDir -Recurse
+      displayName: "Prepare deployment folder"
 
-      displayName: 'Prepare deployment folder'
-
-    # ----------------- Zip the folder -------------------
     - task: ArchiveFiles@2
-      displayName: 'Create deploy ZIP'
+      displayName: "Create deploy ZIP"
       inputs:
         rootFolderOrFile: '$(Build.ArtifactStagingDirectory)\deploy'
         includeRootFolder: false
@@ -78,13 +64,12 @@ stages:
         archiveFile: '$(Build.ArtifactStagingDirectory)\deploy.zip'
         replaceExistingArchive: true
 
-    # ----------------- Publish artifact -------------------
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)\deploy.zip'
         artifact: 'deploy-artifact'
         publishLocation: 'pipeline'
-      displayName: 'Publish deploy artifact'
+      displayName: "Publish deploy artifact"
 
 # ===============================================================
 # DEPLOY STAGE
@@ -111,18 +96,18 @@ stages:
           - task: UsePythonVersion@0
             inputs:
               versionSpec: '$(pythonVersion)'
-            displayName: 'Use Python version'
+            displayName: "Use Python version"
 
           - task: DownloadPipelineArtifact@2
             inputs:
-              buildType: 'current'
-              artifactName: 'deploy-artifact'
-              targetPath: '$(Pipeline.Workspace)\deploy-artifact'
-            displayName: 'Download deploy artifact'
+              buildType: current
+              artifactName: deploy-artifact
+              targetPath: '$(Pipeline.Workspace)/deploy-artifact'
+            displayName: "Download deploy artifact"
 
           - task: AzureWebApp@1
-            displayName: 'Deploy Azure Web App'
+            displayName: "Deploy Azure Web App"
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appName: $(webAppName)
-              package: '$(Pipeline.Workspace)\deploy-artifact\deploy.zip'
+              package: '$(Pipeline.Workspace)/deploy-artifact/deploy.zip'
