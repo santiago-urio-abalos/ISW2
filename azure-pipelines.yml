@@ -28,7 +28,7 @@ stages:
         versionSpec: '$(pythonVersion)'
       displayName: "Use Python $(pythonVersion)"
 
-    # ==== Install dependencies and collect static ====
+    # Install deps + collectstatic in a clean venv
     - powershell: |
         python -m venv env
         .\env\Scripts\Activate.ps1
@@ -36,29 +36,46 @@ stages:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-        Write-Host "▶ Ejecutando collectstatic usando settings: proyect.settings"
+        Write-Host "▶ Ejecutando collectstatic con settings proyect.settings"
         $env:DJANGO_SETTINGS_MODULE="proyect.settings"
         python manage.py collectstatic --noinput
       displayName: "Install dependencies & collect static"
       workingDirectory: "$(Build.SourcesDirectory)"
 
-    # ==== Prepare deployment folder ====
+    # ===============================================================
+    # COPY ONLY DJANGO PROJECT FILES
+    # ===============================================================
+
     - powershell: |
         $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
         New-Item -ItemType Directory -Path $deployDir -Force
 
-        Write-Host "Copiando proyecto..."
-        $include = @("proyect", "relecloud", "reviews", "*.py", "manage.py", "requirements.txt", "static", "staticfiles")
+        Write-Host "📁 Copiando solo carpetas necesarias..."
 
-        foreach ($item in $include) {
-            Get-ChildItem -Path "$(Build.SourcesDirectory)\$item" -Recurse -ErrorAction SilentlyContinue |
-                Copy-Item -Destination $deployDir -Recurse -Force -ErrorAction SilentlyContinue
+        $folders = @(
+            "proyect",
+            "relecloud",
+            "reviews",
+            "static",
+            "staticfiles"
+        )
+
+        foreach ($folder in $folders) {
+            if (Test-Path "$(Build.SourcesDirectory)\$folder") {
+                Copy-Item "$(Build.SourcesDirectory)\$folder" -Destination $deployDir -Recurse -Force
+            }
         }
 
-        Write-Host "Contenido final del ZIP:"
+        Write-Host "📁 Copiando archivos necesarios..."
+        Copy-Item "$(Build.SourcesDirectory)\manage.py" -Destination $deployDir -Force
+        Copy-Item "$(Build.SourcesDirectory)\requirements.txt" -Destination $deployDir -Force
+
+        Write-Host "Contenido final del deploy:"
         Get-ChildItem $deployDir -Recurse
+
       displayName: "Prepare deployment folder"
 
+    # Zip deploy folder
     - task: ArchiveFiles@2
       displayName: "Create deploy ZIP"
       inputs:
