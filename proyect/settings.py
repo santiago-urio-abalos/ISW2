@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'relecloud.apps.RelecloudConfig',
     "crispy_forms",
     "crispy_bootstrap5",   # si usas bootstrap 5
+    'reviews',
 
 ]
 
