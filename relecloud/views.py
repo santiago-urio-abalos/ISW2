@@ -3,6 +3,7 @@ from django.urls import reverse_lazy
 from . import models
 from django.views import generic
 from django.contrib.messages.views import SuccessMessageMixin
+from django.db.models import Count, Avg
 
 # Create your views here.
 def index(request):
@@ -10,9 +11,15 @@ def index(request):
 
 def about(request):
     return render(request, 'about.html')
+
 def destinations(request):
-    all_destinations = models.Destination.objects.all()
-    return render(request, 'destinations.html', { 'destinations': all_destinations})
+    # Calcular popularidad basada en número de reviews y rating promedio
+    all_destinations = models.Destination.objects.annotate(
+        review_count=Count('reviews'),
+        avg_rating=Avg('reviews__rating')
+    ).order_by('-review_count', '-avg_rating')
+    
+    return render(request, 'destinations.html', {'destinations': all_destinations})
 
 class DestinationDetailView(generic.DetailView):
     template_name = 'destination_detail.html'
