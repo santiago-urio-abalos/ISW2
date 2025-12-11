@@ -28,30 +28,34 @@ stages:
         versionSpec: '$(pythonVersion)'
       displayName: "Use Python $(pythonVersion)"
 
-    # Install dependencies only for build verification
+    # ==== Install dependencies and collect static ====
     - powershell: |
-        python -m venv venv
-        .\venv\Scripts\Activate.ps1
+        python -m venv env
+        .\env\Scripts\Activate.ps1
+
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+
+        Write-Host "▶ Ejecutando collectstatic usando settings: proyect.settings"
+        $env:DJANGO_SETTINGS_MODULE="proyect.settings"
         python manage.py collectstatic --noinput
       displayName: "Install dependencies & collect static"
       workingDirectory: "$(Build.SourcesDirectory)"
 
-    # Create deploy folder with only needed files
+    # ==== Prepare deployment folder ====
     - powershell: |
         $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
         New-Item -ItemType Directory -Path $deployDir -Force
 
-        Write-Host "📁 Copiando proyecto Django real al deploy..."
-        $include = @("relecloud", "reviews", "proyect", "static", "staticfiles", "*.py", "manage.py", "requirements.txt")
+        Write-Host "Copiando proyecto..."
+        $include = @("proyect", "relecloud", "reviews", "*.py", "manage.py", "requirements.txt", "static", "staticfiles")
 
         foreach ($item in $include) {
-            Get-ChildItem -Path "$(System.DefaultWorkingDirectory)\$item" -Recurse -ErrorAction SilentlyContinue |
+            Get-ChildItem -Path "$(Build.SourcesDirectory)\$item" -Recurse -ErrorAction SilentlyContinue |
                 Copy-Item -Destination $deployDir -Recurse -Force -ErrorAction SilentlyContinue
         }
 
-        Write-Host "✔ Contenido final de deploy:"
+        Write-Host "Contenido final del ZIP:"
         Get-ChildItem $deployDir -Recurse
       displayName: "Prepare deployment folder"
 
@@ -70,6 +74,7 @@ stages:
         artifact: 'deploy-artifact'
         publishLocation: 'pipeline'
       displayName: "Publish deploy artifact"
+
 
 # ===============================================================
 # DEPLOY STAGE
@@ -92,11 +97,6 @@ stages:
       runOnce:
         deploy:
           steps:
-
-          - task: UsePythonVersion@0
-            inputs:
-              versionSpec: '$(pythonVersion)'
-            displayName: "Use Python version"
 
           - task: DownloadPipelineArtifact@2
             inputs:
