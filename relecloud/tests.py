@@ -52,6 +52,7 @@ class InfoRequestFormTests(TestCase):
 from django.test import TestCase
 from .models import Destination, Review
 from django.db.models import Count, Avg
+from django.urls import reverse
 
 # Create your tests here.
 
@@ -211,4 +212,88 @@ class DestinationPopularityTest(TestCase):
         
         # Verificar que toma menos de 1 segundo
         self.assertLess(execution_time, 1.0)
+<<<<<<< HEAD
 >>>>>>> efece17a (PBI 1: Implementar cálculo de popularidad de destinos basado en reviews)
+=======
+
+
+class DestinationTemplateTest(TestCase):
+    """
+    Tests para verificar que la información de popularidad se muestra correctamente en el template
+    """
+    
+    def setUp(self):
+        """Configuración inicial: crear destinos de prueba"""
+        self.dest_with_reviews = Destination.objects.create(
+            name="Barcelona",
+            description="Ciudad mediterránea"
+        )
+        self.dest_without_reviews = Destination.objects.create(
+            name="Madrid",
+            description="Capital de España"
+        )
+        
+        # Crear reviews para Barcelona
+        Review.objects.create(destination=self.dest_with_reviews, rating=5, comment="Excelente")
+        Review.objects.create(destination=self.dest_with_reviews, rating=4, comment="Muy bueno")
+        Review.objects.create(destination=self.dest_with_reviews, rating=5, comment="Increíble")
+    
+    def test_template_shows_review_count_for_destination_with_reviews(self):
+        """Test: template muestra el número de reviews correctamente"""
+        response = self.client.get(reverse('destinations'))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '3 reviews')
+        self.assertContains(response, 'Barcelona')
+    
+    def test_template_shows_average_rating_for_destination_with_reviews(self):
+        """Test: template muestra el rating promedio correctamente"""
+        response = self.client.get(reverse('destinations'))
+        
+        self.assertEqual(response.status_code, 200)
+        # Promedio de 5, 4, 5 = 4.67 -> se muestra como 4.7
+        self.assertContains(response, '4.7/5')
+    
+    def test_template_shows_no_reviews_message_for_destination_without_reviews(self):
+        """Test: template muestra 'Sin valoraciones' para destinos sin reviews"""
+        response = self.client.get(reverse('destinations'))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Sin valoraciones')
+        self.assertContains(response, 'Madrid')
+    
+    def test_template_displays_all_destinations(self):
+        """Test: template muestra todos los destinos"""
+        response = self.client.get(reverse('destinations'))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Barcelona')
+        self.assertContains(response, 'Madrid')
+    
+    def test_destinations_ordered_correctly_in_template(self):
+        """Test: destinos se muestran en orden correcto (con reviews primero)"""
+        response = self.client.get(reverse('destinations'))
+        content = response.content.decode('utf-8')
+        
+        # Barcelona (con reviews) debe aparecer antes que Madrid (sin reviews)
+        barcelona_pos = content.find('Barcelona')
+        madrid_pos = content.find('Madrid')
+        
+        self.assertLess(barcelona_pos, madrid_pos, 
+                       "Destino con reviews debe aparecer antes que destino sin reviews")
+    
+    def test_plural_handling_for_single_review(self):
+        """Test: manejo correcto del plural con 1 review"""
+        # Crear destino con 1 sola review
+        dest_single = Destination.objects.create(
+            name="Sevilla",
+            description="Ciudad andaluza"
+        )
+        Review.objects.create(destination=dest_single, rating=5)
+        
+        response = self.client.get(reverse('destinations'))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '1 review')  # Sin 's' al final
+        self.assertNotContains(response, '1 reviews')
+>>>>>>> 283f9625 (PBI 2 y 3: Ordenar destinos por popularidad y mostrar info en interfaz)
