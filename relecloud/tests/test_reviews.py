@@ -41,3 +41,4 @@ class TestReviews:
 
         avg_rating = self.destination.reviews.all().aggregate(models.Avg('rating'))['rating__avg']
         assert avg_rating == 4
+# End of file relecloud/tests/test_reviews.py
