@@ -73,6 +73,7 @@ class DestinationPopularityTest(TestCase):
         Review.objects.create(destination=self.dest1, rating=4, comment="Muy bueno")
         Review.objects.create(destination=self.dest1, rating=5, comment="Increíble")
 <<<<<<< HEAD
+<<<<<<< HEAD
         
         # Anotar con count
         dest_annotated = Destination.objects.annotate(
@@ -137,6 +138,8 @@ class DestinationPopularityTest(TestCase):
         """Test: con mismo # de reviews, ordena por rating promedio"""
         # París: 2 reviews, promedio 4.5
 =======
+=======
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
         dest_annotated = Destination.objects.annotate(
             review_count=Count('reviews')
         ).get(pk=self.dest1.pk)
@@ -149,7 +152,10 @@ class DestinationPopularityTest(TestCase):
         self.assertEqual(dest_annotated.review_count, 0)
 
     def test_average_rating_calculation(self):
+<<<<<<< HEAD
 >>>>>>> 7f82e1e0 (arreglo de test.spy)
+=======
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
         Review.objects.create(destination=self.dest1, rating=5)
         Review.objects.create(destination=self.dest1, rating=4)
         Review.objects.create(destination=self.dest1, rating=3)
@@ -227,8 +233,11 @@ class DestinationPopularityTest(TestCase):
         execution_time = end_time - start_time
         self.assertLess(execution_time, 1.0)
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> efece17a (PBI 1: Implementar cálculo de popularidad de destinos basado en reviews)
 =======
+=======
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
 
 # --- Tests para verificar la información de popularidad en el template ---
 class DestinationTemplateTest(TestCase):
@@ -286,6 +295,9 @@ class DestinationTemplateTest(TestCase):
         self.assertContains(response, '1 review')
         self.assertNotContains(response, '1 reviews')
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> 283f9625 (PBI 2 y 3: Ordenar destinos por popularidad y mostrar info en interfaz)
 =======
 >>>>>>> 7f82e1e0 (arreglo de test.spy)
+=======
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733

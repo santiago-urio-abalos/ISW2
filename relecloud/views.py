@@ -3,11 +3,15 @@ from django.urls import reverse_lazy
 from . import models
 from django.views import generic
 from django.contrib.messages.views import SuccessMessageMixin
+<<<<<<< HEAD
 from reviews.models import Review  # Importamos los reviews
+=======
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
 from django.views.generic import DetailView
 from .models import Destination, Cruise, Purchase
 from reviews.models import Review
 from reviews.forms import ReviewForm
+<<<<<<< HEAD
 from .models import Destination
 from relecloud.models import Cruise
 from reviews.forms import ReviewForm  # si tienes un formulario
@@ -17,6 +21,11 @@ from django.db.models import Count, Avg
 from django.db.models import Count, Avg
 from django.contrib.auth.decorators import login_required
 
+=======
+from django.db.models import Count, Avg
+from django.contrib.auth.decorators import login_required
+
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
 
 # Vistas básicas
 def index(request):
@@ -64,10 +73,18 @@ class DestinationDetailView(DetailView):
 class CruiseDetailView(DetailView):
     model = Cruise
     template_name = 'cruise_detail.html'
-    model = models.Cruise
-    context_object_name = 'cruise'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Reviews del destino al que pertenece este cruise
+        # En CruiseDetailView
+        reviews = Review.objects.filter(destination__in=self.object.destinations.all())
+        context['reviews'] = reviews
+        context['average_rating'] = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+        return context
 
 
+<<<<<<< HEAD
 
 from django.core.mail import send_mail, BadHeaderError
 from django.contrib import messages
@@ -83,6 +100,8 @@ def get_context_data(self, **kwargs):
     return context
 
 
+=======
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
 # Formulario de información
 class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     template_name = 'info_request_create.html'
@@ -91,6 +110,7 @@ class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     success_url = reverse_lazy('index')
     success_message = 'Thank you, %(name)s! We will email you when we have more information about %(cruise)s!'
 
+<<<<<<< HEAD
 def form_valid(self, form):
     info = form.instance
     # Evitar duplicados: mismo email y crucero
@@ -138,6 +158,24 @@ def form_valid(self, form):
         fail_silently=False,
     )
     return super().form_valid(form)
+=======
+    def form_valid(self, form):
+        from django.core.mail import send_mail
+        destinatario = 'miguigomez11@gmail.com'
+        info = form.save(commit=False)
+        cruise_name = info.cruise.name if info.cruise else 'N/A'
+        subject = f"Nueva solicitud de información de {info.name} para {cruise_name}"
+        message = f"Nombre: {info.name}\nEmail: {info.email}\nCrucero: {cruise_name}\nNotas: {info.notes}"
+        send_mail(
+            subject,
+            message,
+            None, 
+            [destinatario],
+            fail_silently=False,
+        )
+        return super().form_valid(form)
+
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
 # CRUD de destinos
 class DestinationCreateView(generic.CreateView):
     template_name = 'destination_form.html'
