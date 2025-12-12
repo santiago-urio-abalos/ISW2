@@ -1,4 +1,10 @@
 from django.contrib import admin
+
+from .models import Cruise, Destination, InfoRequest, Review
+
+from .models import Cruise, Destination, InfoRequest
+from reviews.models import Review
+from django.db import models
 from .models import Cruise, Destination, InfoRequest
 from reviews.models import Review
 from django.db import DatabaseError
@@ -46,4 +52,5 @@ class ReviewAdmin(admin.ModelAdmin):
     list_display = ('id', 'destination', 'author', 'rating', 'created_at')
     list_filter = ('rating', 'created_at', 'destination')
     search_fields = ('author__username', 'destination__name', 'comment')
+
 

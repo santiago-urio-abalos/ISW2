@@ -20,15 +20,14 @@ class TempReview(models.Model):
     comment = models.TextField(max_length=500, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        app_label = 'tests'
-        managed = False
+    # Crucero que incluye el destino
+    self.cruise = Cruise.objects.create(
+        name="Caribbean Adventure",
+        price=1000
+    )
+    self.cruise.destinations.add(self.destination)
+    self.cruise.buyers.add(self.user)
 
-class ReviewTests(SimpleTestCase):  # NOT TransactionTestCase
-    def test_create_review(self):
-        dest = TempDestination(name="Maldives", description="Beautiful")
-        review = TempReview(destination=dest, rating=5, comment="Amazing")
-
-        # No hacemos .save() porque no hay DB
-        self.assertEqual(review.rating, 5)
-        self.assertEqual(review.destination.name, "Maldives")
+    # No hacemos .save() porque no hay DB
+    self.assertEqual(review.rating, 5)
+    self.assertEqual(review.destination.name, "Maldives")
