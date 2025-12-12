@@ -5,7 +5,7 @@ EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = 'miguigomez11@gmail.com'  # Pon aquí tu correo real
-EMAIL_HOST_PASSWORD = 'UFV1234'  # Contraseña de prueba proporcionada
+EMAIL_HOST_PASSWORD = 'limj ylqj yixo olky'  # Contraseña de aplicación Gmail
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 """
 Django settings for proyect project.
