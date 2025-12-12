@@ -1,23 +1,28 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 from . import models
 from django.views import generic
 from django.contrib.messages.views import SuccessMessageMixin
 <<<<<<< HEAD
+<<<<<<< HEAD
 from reviews.models import Review  # Importamos los reviews
+=======
+>>>>>>> e87636e7 (Fix: Agregar annotate review_count y avg_rating para mostrar y ordenar por popularidad)
 from django.views.generic import DetailView
 from .models import Destination, Cruise, Purchase
 from reviews.models import Review
-from django.db.models import Avg
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
 from reviews.forms import ReviewForm
+<<<<<<< HEAD
 from .models import Destination
 from relecloud.models import Cruise
 from reviews.forms import ReviewForm  # si tienes un formulario
 =======
 from django.db.models import Count, Avg
 >>>>>>> efece17a (PBI 1: Implementar cálculo de popularidad de destinos basado en reviews)
+=======
+from django.db.models import Count, Avg
+from django.contrib.auth.decorators import login_required
+>>>>>>> e87636e7 (Fix: Agregar annotate review_count y avg_rating para mostrar y ordenar por popularidad)
 
 
 # Vistas básicas
