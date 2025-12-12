@@ -1,19 +1,14 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 from . import models
 from django.views import generic
 from django.contrib.messages.views import SuccessMessageMixin
-from reviews.models import Review  # Importamos los reviews
 from django.views.generic import DetailView
 from .models import Destination, Cruise, Purchase
 from reviews.models import Review
-from django.db.models import Avg
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
 from reviews.forms import ReviewForm
-from .models import Destination
-from relecloud.models import Cruise
-from reviews.forms import ReviewForm  # si tienes un formulario
+from django.db.models import Count, Avg
+from django.contrib.auth.decorators import login_required
 
 
 # Vistas básicas
@@ -24,8 +19,13 @@ def about(request):
     return render(request, 'about.html')
 
 def destinations(request):
-    all_destinations = models.Destination.objects.all()
-    return render(request, 'destinations.html', { 'destinations': all_destinations})
+    # Calcular popularidad basada en número de reviews y rating promedio
+    all_destinations = models.Destination.objects.annotate(
+        review_count=Count('reviews'),
+        avg_rating=Avg('reviews__rating')
+    ).order_by('-review_count', '-avg_rating')
+    
+    return render(request, 'destinations.html', {'destinations': all_destinations})
 
 
 
