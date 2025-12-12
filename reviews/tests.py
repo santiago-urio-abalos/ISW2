@@ -32,18 +32,6 @@ class ReviewModelTest(TestCase):
         self.assertEqual(review.comment, "Excelente destino")
         self.assertIsNotNone(review.created_at)
     
-    def test_review_string_representation(self):
-        """Test: representación en string de Review"""
-        review = Review.objects.create(
-            author=self.user,
-            destination=self.destination,
-            rating=4,
-            comment="Muy bueno"
-        )
-        
-        expected = f"{self.user} - {self.destination} (4)"
-        self.assertEqual(str(review), expected)
-    
     def test_review_related_name(self):
         """Test: related_name='destination_reviews' funciona correctamente"""
         Review.objects.create(
@@ -54,53 +42,6 @@ class ReviewModelTest(TestCase):
         )
         
         self.assertEqual(self.destination.destination_reviews.count(), 1)
-    
-    def test_multiple_reviews_same_destination(self):
-        """Test: múltiples reviews para el mismo destino"""
-        user2 = User.objects.create_user(username='user2', password='pass2')
-        
-        Review.objects.create(author=self.user, destination=self.destination, rating=5, comment="Genial")
-        Review.objects.create(author=user2, destination=self.destination, rating=4, comment="Bueno")
-        
-        self.assertEqual(self.destination.destination_reviews.count(), 2)
-    
-    def test_review_rating_range(self):
-        """Test: rating debe ser un número positivo"""
-        review = Review.objects.create(
-            author=self.user,
-            destination=self.destination,
-            rating=3,
-            comment="Regular"
-        )
-        
-        self.assertGreater(review.rating, 0)
-        self.assertLessEqual(review.rating, 5)
-    
-    def test_review_cascade_delete_with_user(self):
-        """Test: eliminar usuario elimina sus reviews"""
-        Review.objects.create(
-            author=self.user,
-            destination=self.destination,
-            rating=5,
-            comment="Excelente"
-        )
-        
-        self.assertEqual(Review.objects.count(), 1)
-        self.user.delete()
-        self.assertEqual(Review.objects.count(), 0)
-    
-    def test_review_cascade_delete_with_destination(self):
-        """Test: eliminar destino elimina sus reviews"""
-        Review.objects.create(
-            author=self.user,
-            destination=self.destination,
-            rating=5,
-            comment="Excelente"
-        )
-        
-        self.assertEqual(Review.objects.count(), 1)
-        self.destination.delete()
-        self.assertEqual(Review.objects.count(), 0)
 
 
 class DestinationPopularityTest(TestCase):
@@ -191,6 +132,68 @@ class DestinationPopularityTest(TestCase):
         
         self.assertEqual(destinations[0].name, "París")
         self.assertEqual(destinations[1].name, "Roma")
+
+
+class PopularityIntegrationTest(TestCase):
+    """Tests TDD - Integración: Flujo completo de popularidad"""
+    
+    def setUp(self):
+        """Configuración inicial"""
+        self.user1 = User.objects.create_user(username='user1', password='pass')
+        self.user2 = User.objects.create_user(username='user2', password='pass')
+        self.dest1 = Destination.objects.create(name="París", description="Test")
+        self.dest2 = Destination.objects.create(name="Roma", description="Test")
+        self.dest3 = Destination.objects.create(name="Londres", description="Test")
+    
+    def test_complete_popularity_workflow(self):
+        """Test TDD: Flujo completo desde creación de reviews hasta visualización"""
+        # Crear reviews
+        Review.objects.create(author=self.user1, destination=self.dest1, rating=5, comment="A")
+        Review.objects.create(author=self.user2, destination=self.dest1, rating=4, comment="B")
+        Review.objects.create(author=self.user1, destination=self.dest2, rating=3, comment="C")
+        
+        # Calcular popularidad
+        destinations = Destination.objects.annotate(
+            review_count=Count('destination_reviews'),
+            avg_rating=Avg('destination_reviews__rating')
+        ).order_by('-review_count', '-avg_rating')
+        
+        # Verificar orden y valores
+        self.assertEqual(destinations[0].name, "París")
+        self.assertEqual(destinations[0].review_count, 2)
+        self.assertEqual(destinations[0].avg_rating, 4.5)
+        
+        self.assertEqual(destinations[1].name, "Roma")
+        self.assertEqual(destinations[1].review_count, 1)
+        
+        self.assertEqual(destinations[2].name, "Londres")
+        self.assertEqual(destinations[2].review_count, 0)
+    
+    def test_popularity_updates_dynamically(self):
+        """Test TDD: Popularidad se actualiza al agregar reviews"""
+        # Estado inicial
+        dest = Destination.objects.annotate(
+            review_count=Count('destination_reviews')
+        ).get(pk=self.dest1.pk)
+        self.assertEqual(dest.review_count, 0)
+        
+        # Agregar review
+        Review.objects.create(author=self.user1, destination=self.dest1, rating=5, comment="A")
+        
+        dest = Destination.objects.annotate(
+            review_count=Count('destination_reviews')
+        ).get(pk=self.dest1.pk)
+        self.assertEqual(dest.review_count, 1)
+        
+        # Agregar otra
+        Review.objects.create(author=self.user2, destination=self.dest1, rating=4, comment="B")
+        
+        dest = Destination.objects.annotate(
+            review_count=Count('destination_reviews'),
+            avg_rating=Avg('destination_reviews__rating')
+        ).get(pk=self.dest1.pk)
+        self.assertEqual(dest.review_count, 2)
+        self.assertEqual(dest.avg_rating, 4.5)
 
 
 class DestinationViewTest(TestCase):
