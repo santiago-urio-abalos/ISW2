@@ -1,5 +1,10 @@
 from django.contrib import admin
+<<<<<<< HEAD
 from .models import Cruise, Destination, InfoRequest, Review
+=======
+from .models import Cruise, Destination, InfoRequest
+from reviews.models import Review
+>>>>>>> 089ae2fcb446be135d0a687d33e6a8eeefc8a59d
 from django.db import models
 
 # Register your models here.
@@ -24,4 +29,10 @@ class ReviewAdmin(admin.ModelAdmin):
 class InfoRequestAdmin(admin.ModelAdmin):
     list_display = ('id', 'email', 'created_at')
     list_filter = ('created_at',)
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ('id', 'destination', 'author', 'rating', 'created_at')
+    list_filter = ('rating', 'created_at', 'destination')
+    search_fields = ('author__username', 'destination__name', 'comment')
 

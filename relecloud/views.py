@@ -3,12 +3,16 @@ from django.urls import reverse_lazy
 from . import models
 from django.views import generic
 from django.contrib.messages.views import SuccessMessageMixin
+<<<<<<< HEAD
 from django.views.generic import DetailView
 from .models import Destination, Cruise, Purchase
 from reviews.models import Review
 from reviews.forms import ReviewForm
 from django.db.models import Count, Avg
 from django.contrib.auth.decorators import login_required
+=======
+from django.db.models import Count, Avg
+>>>>>>> 089ae2fcb446be135d0a687d33e6a8eeefc8a59d
 
 
 # Vistas básicas
@@ -21,8 +25,13 @@ def about(request):
 def destinations(request):
     # Calcular popularidad basada en número de reviews y rating promedio
     all_destinations = models.Destination.objects.annotate(
+<<<<<<< HEAD
         review_count=Count('reviews'),
         avg_rating=Avg('reviews__rating')
+=======
+        review_count=Count('destination_reviews'),
+        avg_rating=Avg('destination_reviews__rating')
+>>>>>>> 089ae2fcb446be135d0a687d33e6a8eeefc8a59d
     ).order_by('-review_count', '-avg_rating')
     
     return render(request, 'destinations.html', {'destinations': all_destinations})
