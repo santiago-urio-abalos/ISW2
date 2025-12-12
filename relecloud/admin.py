@@ -12,8 +12,13 @@ class CruiseAdmin(admin.ModelAdmin):
 
 @admin.register(Destination)
 class DestinationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name')
+    list_display = ('id', 'name', 'has_image')
     search_fields = ('name',)
+    
+    def has_image(self, obj):
+        return bool(obj.image)
+    has_image.boolean = True
+    has_image.short_description = 'Tiene imagen'
 
 @admin.register(InfoRequest)
 class InfoRequestAdmin(admin.ModelAdmin):

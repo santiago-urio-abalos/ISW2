@@ -101,6 +101,14 @@ if 'test' in sys.argv or 'test_coverage' in sys.argv or os.environ.get('USE_SQLI
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+elif os.environ.get('USE_SQLITE', 'False') == 'True':
+    # Para desarrollo local sin conexión a Azure
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 else:
     DATABASES = {
         'default': {
@@ -154,6 +162,11 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+# Media files (user uploaded files)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
