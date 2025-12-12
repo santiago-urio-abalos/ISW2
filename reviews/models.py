@@ -8,8 +8,11 @@ class Review(models.Model):
     comment = models.TextField()
     rating = models.PositiveSmallIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
-    destination = models.ForeignKey(Destination, on_delete=models.CASCADE, default=1)
-
+    destination = models.ForeignKey(
+        Destination, 
+        on_delete=models.CASCADE, 
+        related_name='destination_reviews'  # Evita conflicto y permite destination.destination_reviews.all()
+    )
 
     def __str__(self):
         return f"{self.author} - {self.destination} ({self.rating})"
