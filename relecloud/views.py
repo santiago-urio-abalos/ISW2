@@ -76,6 +76,22 @@ class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     success_url = reverse_lazy('index')
     success_message = 'Thank you, %(name)s! We will email you when we have more information about %(cruise)s!'
 
+    def form_valid(self, form):
+        from django.core.mail import send_mail
+        destinatario = 'miguigomez11@gmail.com'
+        info = form.save(commit=False)
+        cruise_name = info.cruise.name if info.cruise else 'N/A'
+        subject = f"Nueva solicitud de información de {info.name} para {cruise_name}"
+        message = f"Nombre: {info.name}\nEmail: {info.email}\nCrucero: {cruise_name}\nNotas: {info.notes}"
+        send_mail(
+            subject,
+            message,
+            None, 
+            [destinatario],
+            fail_silently=False,
+        )
+        return super().form_valid(form)
+
 # CRUD de destinos
 class DestinationCreateView(generic.CreateView):
     template_name = 'destination_form.html'
