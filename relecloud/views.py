@@ -94,7 +94,6 @@ class DestinationDeleteView(generic.DeleteView):
 
 
 @login_required
-@login_required
 def add_review(request, destination_id):
     destination = get_object_or_404(Destination, pk=destination_id)
 
