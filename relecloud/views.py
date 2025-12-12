@@ -7,7 +7,7 @@ from django.views.generic import DetailView
 from .models import Destination, Cruise, Purchase
 from reviews.models import Review
 from reviews.forms import ReviewForm
-from django.db.models import Count, Avg, Case, When
+from django.db.models import Count, Avg, Case, When, Value, FloatField
 from django.contrib.auth.decorators import login_required
 
 
