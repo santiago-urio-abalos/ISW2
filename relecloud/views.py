@@ -24,6 +24,11 @@ def destinations(request):
     # Los destinos sin reviews (NULL) se consideran con rating 0 para el ordenamiento
     from django.db.models import Case, When, Value, FloatField
     
+    # Temporary: defer the `image` field to avoid selecting the column
+    # when the production database has not yet applied the migration
+    # that adds `relecloud_destination.image`. This prevents a
+    # ProgrammingError while the DB is being migrated. Remove this
+    # defer once migrations have been applied in production.
     all_destinations = models.Destination.objects.annotate(
         review_count=Count('destination_reviews'),
         avg_rating=Avg('destination_reviews__rating'),
@@ -33,7 +38,7 @@ def destinations(request):
             default='avg_rating',
             output_field=FloatField()
         )
-    ).order_by('-review_count', '-sort_rating', 'name')
+    ).order_by('-review_count', '-sort_rating', 'name').defer('image')
     
     return render(request, 'destinations.html', {'destinations': all_destinations})
 
