@@ -20,6 +20,7 @@ def about(request):
 
 def destinations(request):
     # Calcular popularidad basada en número de reviews y rating promedio
+    # Ordenamiento: primero por cantidad de reviews, luego por rating promedio
     all_destinations = models.Destination.objects.annotate(
         review_count=Count('destination_reviews'),
         avg_rating=Avg('destination_reviews__rating')
