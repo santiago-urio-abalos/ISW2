@@ -18,6 +18,7 @@ class InfoRequestFormTests(TestCase):
             departure_date=timezone.now().date()
         )
         self.url = reverse('info_request')
+        # Comentario real: cambio visible para forzar PR
 
     def test_info_request_success(self):
         data = {
