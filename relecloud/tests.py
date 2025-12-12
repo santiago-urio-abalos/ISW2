@@ -12,6 +12,7 @@ class InfoRequestFormTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.cruise = Cruise.objects.create(
+
             name="Test Cruise",
             description="Test description",
             departure_date=timezone.now().date()
@@ -31,6 +32,7 @@ class InfoRequestFormTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('Miguel', mail.outbox[0].body)
         self.assertIn('Test Cruise', mail.outbox[0].body)
+        
 
     def test_info_request_duplicate(self):
         InfoRequest.objects.create(
