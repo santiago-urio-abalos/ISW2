@@ -85,18 +85,26 @@ class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
 
     def form_valid(self, form):
         from django.core.mail import send_mail
+        from django.contrib import messages
         destinatario = 'miguigomez11@gmail.com'
         info = form.save(commit=False)
         cruise_name = info.cruise.name if info.cruise else 'N/A'
         subject = f"Nueva solicitud de información de {info.name} para {cruise_name}"
         message = f"Nombre: {info.name}\nEmail: {info.email}\nCrucero: {cruise_name}\nNotas: {info.notes}"
-        send_mail(
-            subject,
-            message,
-            None, 
-            [destinatario],
-            fail_silently=False,
-        )
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                None, 
+                [destinatario],
+                fail_silently=False,
+            )
+            messages.success(self.request, f'Gracias {info.name}! Te enviaremos información sobre {cruise_name}.')
+        except Exception as e:
+            # Si falla el email, seguir funcionando pero avisar
+            messages.warning(self.request, f'Tu solicitud fue guardada, pero no pudimos enviar el email de confirmación. Contacta directamente a {destinatario}.')
+        
         return super().form_valid(form)
 
 # CRUD de destinos
