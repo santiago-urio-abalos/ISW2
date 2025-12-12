@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cruise, Destination, InfoRequest
+from .models import Cruise, Destination, InfoRequest, Review
 from django.db import models
 
 # Register your models here.
@@ -13,6 +13,12 @@ class CruiseAdmin(admin.ModelAdmin):
 class DestinationAdmin(admin.ModelAdmin):
     list_display = ('id', 'name')
     search_fields = ('name',)
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ('id', 'destination', 'rating', 'created_at')
+    list_filter = ('rating', 'created_at')
+    search_fields = ('destination__name', 'comment')
 
 @admin.register(InfoRequest)
 class InfoRequestAdmin(admin.ModelAdmin):

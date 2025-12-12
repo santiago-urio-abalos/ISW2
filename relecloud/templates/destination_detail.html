@@ -46,4 +46,13 @@ ReleCloud - {{ destination.name }}
 {% else %}
     <p>No reviews yet for this destination.</p>
 {% endif %}
+{% if user.is_staff %}
+    <form action="{% url 'destination_form' destination.id %}" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Upload</button>
+    <form action="{% url 'destination_confirm_delete' destination.id %}" method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete Destination</button>
+    </form>
+{% endif %}
 {% endblock content %}
