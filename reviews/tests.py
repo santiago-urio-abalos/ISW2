@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 96c4a1d8085dc55cd4a61d72cf3c47c6915c8b8c
+
 from django.test import TestCase
 from relecloud.models import Destination
 from reviews.models import Review
@@ -9,9 +6,8 @@ from django.contrib.auth.models import User
 from django.db.models import Count, Avg
 from django.urls import reverse
 
-<<<<<<< HEAD
 # Create your tests here.
-=======
+
 from django.test import TestCase
 from relecloud.models import Destination
 from reviews.models import Review
@@ -116,8 +112,6 @@ class DestinationPopularityWithReviewsAppTest(TestCase):
         
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Sin valoraciones')
->>>>>>> 089ae2fcb446be135d0a687d33e6a8eeefc8a59d
-=======
 
 class DestinationPopularityWithReviewsAppTest(TestCase):
     """
@@ -215,4 +209,5 @@ class DestinationPopularityWithReviewsAppTest(TestCase):
         
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Sin valoraciones')
+
 >>>>>>> 96c4a1d8085dc55cd4a61d72cf3c47c6915c8b8c
