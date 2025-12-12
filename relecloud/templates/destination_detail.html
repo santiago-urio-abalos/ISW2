@@ -5,15 +5,26 @@ ReleCloud - {{ destination.name }}
 {% endblock %}
 
 {% block content %}
-<h1>{{ destination.name }}</h1>
-<p>{{ destination.description }}</p>
+<div class="row">
+    <div class="col-md-4">
+        {% if destination.image %}
+            <img src="{{ destination.image.url }}" alt="{{ destination.name }}" class="img-fluid rounded mb-3" />
+        {% else %}
+            <img src="/static/admin/img/icon-no-image.svg" alt="No image" class="img-fluid rounded mb-3" />
+        {% endif %}
+    </div>
+    <div class="col-md-8">
+        <h1>{{ destination.name }}</h1>
+        <p>{{ destination.description }}</p>
 
-<p>You can explore {{ destination.name }} on the following cruises:</p>
-<ul class="list-group">
-    {% for cruise in destination.cruises.all %}
-        <a class="list-group-item list-group-item-action" href="{% url 'cruise_detail' cruise.id %}">{{ cruise.name }}</a>
-    {% endfor %}
-</ul>
+        <p>You can explore {{ destination.name }} on the following cruises:</p>
+        <ul class="list-group">
+            {% for cruise in destination.cruises.all %}
+                <a class="list-group-item list-group-item-action" href="{% url 'cruise_detail' cruise.id %}">{{ cruise.name }}</a>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
 
 {% if user.is_authenticated %}
     {% if purchased %}
