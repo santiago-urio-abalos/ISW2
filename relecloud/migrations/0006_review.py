@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('relecloud', '0003_remove_inforequest_message_cruise_description_and_more'),
+        ('relecloud', '0005_remove_purchase_cruise_alter_purchase_destination'),
     ]
 
     operations = [
