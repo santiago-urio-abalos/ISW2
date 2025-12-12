@@ -3,15 +3,11 @@ from django.urls import reverse_lazy
 from . import models
 from django.views import generic
 from django.contrib.messages.views import SuccessMessageMixin
-<<<<<<< HEAD
 from reviews.models import Review  # Importamos los reviews
-=======
->>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
 from django.views.generic import DetailView
 from .models import Destination, Cruise, Purchase
 from reviews.models import Review
 from reviews.forms import ReviewForm
-<<<<<<< HEAD
 from .models import Destination
 from relecloud.models import Cruise
 from reviews.forms import ReviewForm  # si tienes un formulario
@@ -21,11 +17,6 @@ from django.db.models import Count, Avg
 from django.db.models import Count, Avg
 from django.contrib.auth.decorators import login_required
 
-=======
-from django.db.models import Count, Avg
-from django.contrib.auth.decorators import login_required
-
->>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
 
 # Vistas básicas
 def index(request):
@@ -106,7 +97,6 @@ class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     success_url = reverse_lazy('index')
     success_message = 'Thank you, %(name)s! We will email you when we have more information about %(cruise)s!'
 
-<<<<<<< HEAD
 def form_valid(self, form):
     info = form.instance
     # Evitar duplicados: mismo email y crucero

@@ -6,13 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-<<<<<<< HEAD
         ('relecloud', '0005_remove_purchase_cruise_alter_purchase_destination'),
         ('relecloud', '0006_review'),
-=======
-        ('relecloud', '0004_review'),
-        ('relecloud', '0005_remove_purchase_cruise_alter_purchase_destination'),
->>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
     ]
 
     operations = [
