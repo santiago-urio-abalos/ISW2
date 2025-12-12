@@ -8,6 +8,7 @@ from .models import Cruise, InfoRequest, Destination, Review
 # --- Tests para el formulario info_request ---
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class InfoRequestFormTests(TestCase):
+    # Cambio insignificante para forzar PR en la nueva rama
     def setUp(self):
         self.client = Client()
         self.cruise = Cruise.objects.create(
