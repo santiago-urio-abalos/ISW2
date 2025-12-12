@@ -12,7 +12,21 @@ If you can imagine it, we travel to it! Below is our list of confirmed destinati
 <ul class="list-group">
     {% for destination in destinations %}
     <a class="list-group-item list-group-item-action" href="{% url 'destination_detail' destination.id %}">
-        {{ destination }}
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ destination.name }}</strong>
+            </div>
+            <div class="text-muted">
+                {% if destination.review_count > 0 %}
+                    <span class="badge bg-primary">{{ destination.review_count }} review{{ destination.review_count|pluralize }}</span>
+                    {% if destination.avg_rating %}
+                        <span class="badge bg-success">★ {{ destination.avg_rating|floatformat:1 }}/5</span>
+                    {% endif %}
+                {% else %}
+                    <span class="badge bg-secondary">Sin valoraciones</span>
+                {% endif %}
+            </div>
+        </div>
     </a>
     {% endfor %}
 </ul>

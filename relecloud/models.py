@@ -20,6 +20,26 @@ class Destination(models.Model):
     def get_absolute_url(self):
         return reverse('destination_detail', kwargs={'pk': self.pk})
 
+class Review(models.Model):
+    destination = models.ForeignKey(
+        Destination,
+        on_delete=models.CASCADE,
+        related_name='reviews'
+    )
+    rating = models.IntegerField(
+        choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')],
+        help_text='Rating from 1 to 5'
+    )
+    comment = models.TextField(
+        max_length=500,
+        null=True,
+        blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f'Review for {self.destination.name} - {self.rating}/5'
+
 class Cruise(models.Model):
     name = models.CharField(
         unique=True,
