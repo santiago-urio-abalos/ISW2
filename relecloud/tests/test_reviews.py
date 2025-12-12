@@ -22,10 +22,6 @@ class TestReviews:
             price=1000
         )
         self.cruise.destinations.add(self.destination)
-
-        # Simulación de compra: puedes tener un modelo Purchase o similar.
-        # Si no lo tienes, asumimos que Cruise tiene una relación con usuarios,
-        # por ejemplo: cruise.buyers.add(user)
         self.cruise.buyers.add(self.user)
 
     def test_only_logged_users_can_access_review_form(self, client):
