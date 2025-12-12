@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'relecloud.apps.RelecloudConfig',
+    'reviews',
     "crispy_forms",
     "crispy_bootstrap5",   # si usas bootstrap 5
 
