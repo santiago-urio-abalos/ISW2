@@ -1,17 +1,13 @@
 from django.contrib import admin
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 from .models import Cruise, Destination, InfoRequest, Review
-=======
+
 from .models import Cruise, Destination, InfoRequest
 from reviews.models import Review
->>>>>>> 089ae2fcb446be135d0a687d33e6a8eeefc8a59d
 from django.db import models
-=======
 from .models import Cruise, Destination, InfoRequest
 from reviews.models import Review
 from django.db import DatabaseError
->>>>>>> 96c4a1d8085dc55cd4a61d72cf3c47c6915c8b8c
 
 # Register your models here.
 @admin.register(Cruise)
@@ -56,4 +52,5 @@ class ReviewAdmin(admin.ModelAdmin):
     list_display = ('id', 'destination', 'author', 'rating', 'created_at')
     list_filter = ('rating', 'created_at', 'destination')
     search_fields = ('author__username', 'destination__name', 'comment')
+
 
