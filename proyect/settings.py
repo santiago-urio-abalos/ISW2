@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'relecloud.apps.RelecloudConfig',
+    'reviews',
     "crispy_forms",
     "crispy_bootstrap5",   # si usas bootstrap 5
 
@@ -93,11 +94,11 @@ WSGI_APPLICATION = 'proyect.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 import sys
-if 'test' in sys.argv or 'test_coverage' in sys.argv:
+if 'test' in sys.argv or 'test_coverage' in sys.argv or os.environ.get('USE_SQLITE') == 'True':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'test_db.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 else:
