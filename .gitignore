@@ -12,6 +12,9 @@ venv/
 .env
 .env.*
 
+# Media files (uploaded images)
+media/
+
 # OS
 .DS_Store
 Thumbs.db

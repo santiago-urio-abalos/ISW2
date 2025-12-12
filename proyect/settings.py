@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     'reviews',
     "crispy_forms",
     "crispy_bootstrap5",   # si usas bootstrap 5
-    'reviews',
 
 ]
 
@@ -96,6 +95,14 @@ WSGI_APPLICATION = 'proyect.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 import sys
 if 'test' in sys.argv or 'test_coverage' in sys.argv or os.environ.get('USE_SQLITE') == 'True':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+elif os.environ.get('USE_SQLITE', 'False') == 'True':
+    # Para desarrollo local sin conexión a Azure
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -155,6 +162,11 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+# Media files (user uploaded files)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -162,5 +174,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
 
 
