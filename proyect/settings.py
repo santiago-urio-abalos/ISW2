@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     'reviews',
     "crispy_forms",
     "crispy_bootstrap5",   # si usas bootstrap 5
-    'reviews',
 
 ]
 
@@ -162,5 +161,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
 
 
