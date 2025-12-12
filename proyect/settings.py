@@ -1,3 +1,12 @@
+import os
+# Email settings (example: Gmail SMTP, replace with your own)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = 'miguigomez11@gmail.com'  # Pon aquí tu correo real
+    # EMAIL_HOST_PASSWORD removed for security reasons
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 """
 Django settings for proyect project.
 
@@ -45,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'relecloud.apps.RelecloudConfig',
+    'reviews',
     "crispy_forms",
     "crispy_bootstrap5",   # si usas bootstrap 5
 
@@ -83,20 +93,28 @@ WSGI_APPLICATION = 'proyect.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres', 
-        'USER': 'Santiago',
-        'PASSWORD': '1234asdfASDF',
-        'HOST': 'santiagodb.postgres.database.azure.com',
-        'PORT': '5432',
-        'OPTIONS': {
-            'sslmode': 'require',
-        },
+import sys
+if 'test' in sys.argv or 'test_coverage' in sys.argv or os.environ.get('USE_SQLITE') == 'True':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'postgres', 
+            'USER': 'Santiago',
+            'PASSWORD': '1234asdfASDF',
+            'HOST': 'santiagodb.postgres.database.azure.com',
+            'PORT': '5432',
+            'OPTIONS': {
+                'sslmode': 'require',
+            },
+        }
+    }
 
 
 
@@ -143,5 +161,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
 
 

@@ -1,0 +1,68 @@
+<div style="display: flex; justify-content: center; align-items: center; margin-top: 50px;">
+  <form method="post" style="text-align: center; border: 1px solid #ccc; padding: 20px; border-radius: 10px; width: 300px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+    {% csrf_token %}
+    
+    <h2>Deja tu review</h2>
+
+    <div style="margin-bottom: 15px;">
+      {{ form.comment }}
+    </div>
+
+    <div class="star-rating" style="margin-bottom: 10px;">
+      <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
+      <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
+      <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
+      <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
+      <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
+    </div>
+
+    <div id="selected-rating" style="margin-bottom: 15px; font-weight: bold;"></div>
+
+    <button type="submit" style="padding: 10px 20px; font-size: 1rem; border-radius: 5px; cursor: pointer;">Enviar review</button>
+    
+    <!-- Enlace para volver al detalle del destino -->
+    <div style="margin-top: 15px;">
+      <a href="{% url 'destination_detail' destination.id %}" style="text-decoration: none; color: #007BFF;">Volver al destino</a>
+    </div>
+  </form>
+</div>
+
+
+<style>
+.star-rating {
+    display: flex;
+    justify-content: center;
+    flex-direction: row-reverse; /* Para que 5 esté a la derecha */
+}
+.star-rating input[type="radio"] {
+    display: none; /* Ocultamos los radios */
+}
+.star-rating label {
+    font-size: 2rem;
+    color: gray;
+    cursor: pointer;
+    transition: color 0.2s;
+    margin: 0 5px;
+}
+.star-rating input[type="radio"]:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+    color: gold;
+}
+</style>
+
+<script>
+const stars = document.querySelectorAll('.star-rating input');
+const display = document.getElementById('selected-rating');
+
+stars.forEach(star => {
+    star.addEventListener('change', () => {
+        display.textContent = `Has seleccionado ${star.value} estrella${star.value > 1 ? 's' : ''}`;
+    });
+});
+</script>
+
+
+
+
+

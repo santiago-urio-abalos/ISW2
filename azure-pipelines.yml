@@ -3,107 +3,127 @@ trigger:
 
 variables:
   azureServiceConnectionId: 'aefec5e6-8deb-46c7-aab5-9198d93191df'
-  webAppName: 'ProyectIS2'
+  webAppName: 'NewHope'
   environmentName: 'surio-v2'
-  projectRoot: $(System.DefaultWorkingDirectory)
   pythonVersion: '3.11'
 
 stages:
-# --------------------------
-# Build Stages
-# --------------------------
+
+# ===============================================================
+# BUILD STAGE
+# ===============================================================
 - stage: Build
-  displayName: Build stage
+  displayName: Build Stage
   jobs:
   - job: BuildJob
     pool:
-      name: Default # tu agente self-hosted en Windows
+      name: Default
+      demands:
+        - Agent.Name -equals DESKTOP-31M0L0Q
 
     steps:
+
     - task: UsePythonVersion@0
       inputs:
         versionSpec: '$(pythonVersion)'
-      displayName: 'Use Python $(pythonVersion)'
+      displayName: "Use Python $(pythonVersion)"
 
+    # Install deps + collectstatic in a clean venv
     - powershell: |
-        python -m venv antenv
-        .\antenv\Scripts\Activate.ps1
+        python -m venv env
+        .\env\Scripts\Activate.ps1
+
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-      workingDirectory: $(projectRoot)
-      displayName: "Install Python dependencies"
 
-    # Preparar carpeta de despliegue solo con archivos necesarios
+        Write-Host "▶ Ejecutando collectstatic con settings proyect.settings"
+        $env:DJANGO_SETTINGS_MODULE="proyect.settings"
+        python manage.py collectstatic --noinput
+      displayName: "Install dependencies & collect static"
+      workingDirectory: "$(Build.SourcesDirectory)"
+
+    # ===============================================================
+    # COPY ONLY DJANGO PROJECT FILES
+    # ===============================================================
+
     - powershell: |
         $deployDir = "$(Build.ArtifactStagingDirectory)\deploy"
         New-Item -ItemType Directory -Path $deployDir -Force
 
-        # Copiar archivos Python
-        Copy-Item "$(System.DefaultWorkingDirectory)\**\*.py" -Destination $deployDir -Recurse
-        Copy-Item "$(System.DefaultWorkingDirectory)\manage.py" -Destination $deployDir
-        Copy-Item "$(System.DefaultWorkingDirectory)\requirements.txt" -Destination $deployDir
+        Write-Host "📁 Copiando solo carpetas necesarias..."
 
-        # Copiar templates y static de relecloud si existen
-        $templatesPath = "$(System.DefaultWorkingDirectory)\relecloud\templates"
-        if (Test-Path $templatesPath) {
-            Copy-Item $templatesPath -Destination $deployDir -Recurse
+        $folders = @(
+            "proyect",
+            "relecloud",
+            "reviews",
+            "static",
+            "staticfiles"
+        )
+
+        foreach ($folder in $folders) {
+            if (Test-Path "$(Build.SourcesDirectory)\$folder") {
+                Copy-Item "$(Build.SourcesDirectory)\$folder" -Destination $deployDir -Recurse -Force
+            }
         }
 
-        $staticPath = "$(System.DefaultWorkingDirectory)\relecloud\static"
-        if (Test-Path $staticPath) {
-            Copy-Item $staticPath -Destination $deployDir -Recurse
-        }
+        Write-Host "📁 Copiando archivos necesarios..."
+        Copy-Item "$(Build.SourcesDirectory)\manage.py" -Destination $deployDir -Force
+        Copy-Item "$(Build.SourcesDirectory)\requirements.txt" -Destination $deployDir -Force
+
+        Write-Host "Contenido final del deploy:"
+        Get-ChildItem $deployDir -Recurse
+
       displayName: "Prepare deployment folder"
 
-    # Crear ZIP del artifact
+    # Zip deploy folder
     - task: ArchiveFiles@2
-      displayName: 'Create deploy ZIP'
+      displayName: "Create deploy ZIP"
       inputs:
         rootFolderOrFile: '$(Build.ArtifactStagingDirectory)\deploy'
         includeRootFolder: false
         archiveType: zip
-        archiveFile: '$(Build.ArtifactStagingDirectory)/deploy.zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)\deploy.zip'
         replaceExistingArchive: true
-        advancedCompression: true
-        compressionLevel: '1'
 
-    # Verificar tamaño del ZIP (opcional)
-    - powershell: |
-        $size = (Get-Item '$(Build.ArtifactStagingDirectory)/deploy.zip').Length
-        Write-Host "ZIP artifact size: $($size / 1MB) MB"
-      displayName: 'Check deploy ZIP size'
-
-    # Publicar artifact como Pipeline Artifact
     - task: PublishPipelineArtifact@1
       inputs:
-        targetPath: '$(Build.ArtifactStagingDirectory)/deploy.zip'
+        targetPath: '$(Build.ArtifactStagingDirectory)\deploy.zip'
         artifact: 'deploy-artifact'
         publishLocation: 'pipeline'
-      displayName: 'Publish deploy ZIP as pipeline artifact'
+      displayName: "Publish deploy artifact"
 
-# --------------------------
-# Deploy Stage
-# --------------------------
+
+# ===============================================================
+# DEPLOY STAGE
+# ===============================================================
 - stage: Deploy
   displayName: Deploy Web App
   dependsOn: Build
   condition: succeeded()
+
   jobs:
   - deployment: DeploymentJob
     pool:
       name: Default
+      demands:
+        - Agent.Name -equals DESKTOP-31M0L0Q
+
     environment: $(environmentName)
+
     strategy:
       runOnce:
         deploy:
           steps:
-          - task: UsePythonVersion@0
+
+          - task: DownloadPipelineArtifact@2
             inputs:
-              versionSpec: '$(pythonVersion)'
-            displayName: 'Use Python version'
+              buildType: current
+              artifactName: deploy-artifact
+              targetPath: '$(Pipeline.Workspace)/deploy-artifact'
+            displayName: "Download deploy artifact"
 
           - task: AzureWebApp@1
-            displayName: 'Deploy Azure Web App'
+            displayName: "Deploy Azure Web App"
             inputs:
               azureSubscription: $(azureServiceConnectionId)
               appName: $(webAppName)

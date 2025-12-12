@@ -1,21 +1,58 @@
 {% extends 'base.html' %}
 
 {% block title %}
-ReleCloud - {{ destination }}
+ReleCloud - {{ destination.name }}
 {% endblock %}
 
 {% block content %}
-<h1>{{ destination }}</h1>
-<p>
-{{ destination.description }}
-</p>
-<p>You can explore {{ destination }} on the following cruises:</p>
-<a class="nav-link" href="{% url 'destination_form' %}">Upload destination</a>
-<a class="nav-link" href="{% url 'destination_confirm_delete' destination.id %}">Delete destination</a>
-                
+<h1>{{ destination.name }}</h1>
+<p>{{ destination.description }}</p>
+
+<p>You can explore {{ destination.name }} on the following cruises:</p>
 <ul class="list-group">
     {% for cruise in destination.cruises.all %}
-    <a class="list-group-item list-group-item-action" href="{% url 'cruise_detail' cruise.id %}">{{ cruise }}</a>
+        <a class="list-group-item list-group-item-action" href="{% url 'cruise_detail' cruise.id %}">{{ cruise.name }}</a>
     {% endfor %}
 </ul>
+
+{% if user.is_authenticated %}
+    {% if purchased %}
+        <p>Has comprado este destino.</p>
+        <a class="btn btn-success" href="{% url 'add_review' destination.id %}">Dejar una review</a>
+    {% else %}
+        <form action="{% url 'buy_destination' destination.id %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Comprar este destino</button>
+        </form>
+    {% endif %}
+{% else %}
+    <p>Debes <a href="{% url 'login' %}?next={{ request.path }}">iniciar sesión</a> para comprar o dejar reviews.</p>
+{% endif %}
+
+<h2>Reviews</h2>
+<p>Average rating: {{ average_rating|floatformat:1 }} / 5</p>
+
+{% if reviews %}
+    <ul class="list-group mt-2">
+        {% for review in reviews %}
+            <li class="list-group-item">
+                 <strong>{{ review.author.username }}</strong> 
+                rated {{ review.rating }} / 5<br>
+                {{ review.comment }}<br>
+                <small class="text-muted">{{ review.created_at|date:"d M Y H:i" }}</small>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No reviews yet for this destination.</p>
+{% endif %}
+{% if user.is_staff %}
+    <form action="{% url 'destination_form' destination.id %}" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Upload</button>
+    <form action="{% url 'destination_confirm_delete' destination.id %}" method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete Destination</button>
+    </form>
+{% endif %}
 {% endblock content %}

@@ -5,14 +5,31 @@ ReleCloud - {{ cruise }}
 {% endblock %}
 
 {% block content %}
-<h1>{{ cruise }}</h1>
-<p>
-{{ cruise.description }}
-</p>
-<p>You can explore {{ cruise }} on the following cruises:</p>
+<h1>{{ cruise.name }}</h1>
+<p>{{ cruise.description }}</p>
+
+<p>This cruise includes the following destinations:</p>
 <ul class="list-group">
     {% for destination in cruise.destinations.all %}
-    <a class="list-group-item list-group-item-action" href="{% url 'destination_detail' destination.id %}">{{ destination }}</a>
+        <a class="list-group-item list-group-item-action" href="{% url 'destination_detail' destination.id %}">{{ destination.name }}</a>
     {% endfor %}
 </ul>
+
+<h2>Reviews</h2>
+<p>Average rating: {{ average_rating|floatformat:1 }} / 5</p>
+
+{% if reviews %}
+    <ul class="list-group mt-2">
+        {% for review in reviews %}
+            <li class="list-group-item">
+                <strong>{{ review.author.username }}</strong> 
+                rated {{ review.rating }} / 5<br>
+                {{ review.comment }}<br>
+                <small class="text-muted">{{ review.created_at|date:"d M Y H:i" }}</small>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No reviews yet for this cruise.</p>
+{% endif %}
 {% endblock content %}
