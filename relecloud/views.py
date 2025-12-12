@@ -93,6 +93,7 @@ class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     success_url = reverse_lazy('index')
     success_message = 'Thank you, %(name)s! We will email you when we have more information about %(cruise)s!'
 
+<<<<<<< HEAD
     def form_valid(self, form):
         info = form.instance
         # Evitar duplicados: mismo email y crucero
@@ -126,6 +127,8 @@ class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
             messages.error(self.request, f"Error al enviar el email: {str(e)}")
         return response
 
+=======
+>>>>>>> 966ef054 (Cambios)
 # CRUD de destinos
 class DestinationCreateView(generic.CreateView):
     template_name = 'destination_form.html'
