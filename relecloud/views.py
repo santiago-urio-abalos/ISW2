@@ -20,10 +20,17 @@ def about(request):
 
 def destinations(request):
     # Calcular popularidad basada en número de reviews y rating promedio
+    # Ordenamiento: primero por cantidad de reviews, luego por rating promedio
     all_destinations = models.Destination.objects.annotate(
-        review_count=Count('reviews'),
-        avg_rating=Avg('reviews__rating')
-    ).order_by('-review_count', '-avg_rating')
+        review_count=Count('destination_reviews'),
+        avg_rating=Avg('destination_reviews__rating'),
+        # Coalesce para tratar NULL como 0 en el ordenamiento
+        sort_rating=Case(
+            When(avg_rating__isnull=True, then=Value(0.0)),
+            default='avg_rating',
+            output_field=FloatField()
+        )
+    ).order_by('-review_count', '-sort_rating', 'name').defer('image')
     
     return render(request, 'destinations.html', {'destinations': all_destinations})
 

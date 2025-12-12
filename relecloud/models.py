@@ -15,6 +15,12 @@ class Destination(models.Model):
         null=False,
         blank=False
     )
+    image = models.ImageField(
+        upload_to='destinations/',
+        null=True,
+        blank=True,
+        help_text='Imagen del destino'
+    )
     def __str__(self):
         return self.name
     def get_absolute_url(self):
