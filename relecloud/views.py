@@ -1,19 +1,14 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 from . import models
 from django.views import generic
 from django.contrib.messages.views import SuccessMessageMixin
-from reviews.models import Review  # Importamos los reviews
 from django.views.generic import DetailView
 from .models import Destination, Cruise, Purchase
 from reviews.models import Review
-from django.db.models import Avg
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
 from reviews.forms import ReviewForm
-from .models import Destination
-from relecloud.models import Cruise
-from reviews.forms import ReviewForm  # si tienes un formulario
+from django.db.models import Count, Avg
+from django.contrib.auth.decorators import login_required
 
 
 # Vistas básicas
@@ -24,8 +19,13 @@ def about(request):
     return render(request, 'about.html')
 
 def destinations(request):
-    all_destinations = models.Destination.objects.all()
-    return render(request, 'destinations.html', { 'destinations': all_destinations})
+    # Calcular popularidad basada en número de reviews y rating promedio
+    all_destinations = models.Destination.objects.annotate(
+        review_count=Count('reviews'),
+        avg_rating=Avg('reviews__rating')
+    ).order_by('-review_count', '-avg_rating')
+    
+    return render(request, 'destinations.html', {'destinations': all_destinations})
 
 
 
@@ -75,6 +75,22 @@ class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     fields = ['name', 'email', 'cruise', 'notes']
     success_url = reverse_lazy('index')
     success_message = 'Thank you, %(name)s! We will email you when we have more information about %(cruise)s!'
+
+    def form_valid(self, form):
+        from django.core.mail import send_mail
+        destinatario = 'miguigomez11@gmail.com'
+        info = form.save(commit=False)
+        cruise_name = info.cruise.name if info.cruise else 'N/A'
+        subject = f"Nueva solicitud de información de {info.name} para {cruise_name}"
+        message = f"Nombre: {info.name}\nEmail: {info.email}\nCrucero: {cruise_name}\nNotas: {info.notes}"
+        send_mail(
+            subject,
+            message,
+            None, 
+            [destinatario],
+            fail_silently=False,
+        )
+        return super().form_valid(form)
 
 # CRUD de destinos
 class DestinationCreateView(generic.CreateView):
