@@ -3,10 +3,17 @@ from django.urls import reverse_lazy
 from . import models
 from django.views import generic
 from django.contrib.messages.views import SuccessMessageMixin
+from reviews.models import Review  # Importamos los reviews
 from django.views.generic import DetailView
 from .models import Destination, Cruise, Purchase
 from reviews.models import Review
 from reviews.forms import ReviewForm
+from .models import Destination
+from relecloud.models import Cruise
+from reviews.forms import ReviewForm  # si tienes un formulario
+
+from django.db.models import Count, Avg
+
 from django.db.models import Count, Avg
 from django.contrib.auth.decorators import login_required
 
@@ -83,6 +90,20 @@ class CruiseDetailView(DetailView):
         return context
 
 
+from django.core.mail import send_mail, BadHeaderError
+from django.contrib import messages
+
+
+def get_context_data(self, **kwargs):
+    context = super().get_context_data(**kwargs)
+    # Reviews del destino al que pertenece este cruise
+    # En CruiseDetailView
+    reviews = Review.objects.filter(destination__in=self.object.destinations.all())
+    context['reviews'] = reviews
+    context['average_rating'] = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+    return context
+
+
 # Formulario de información
 class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     template_name = 'info_request_create.html'
@@ -91,21 +112,69 @@ class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     success_url = reverse_lazy('index')
     success_message = 'Thank you, %(name)s! We will email you when we have more information about %(cruise)s!'
 
-    def form_valid(self, form):
-        from django.core.mail import send_mail
-        destinatario = 'miguigomez11@gmail.com'
-        info = form.save(commit=False)
-        cruise_name = info.cruise.name if info.cruise else 'N/A'
-        subject = f"Nueva solicitud de información de {info.name} para {cruise_name}"
-        message = f"Nombre: {info.name}\nEmail: {info.email}\nCrucero: {cruise_name}\nNotas: {info.notes}"
+def form_valid(self, form):
+    info = form.instance
+    # Evitar duplicados: mismo email y crucero
+    if models.InfoRequest.objects.filter(email=info.email, cruise=info.cruise).exists():
+        messages.warning(self.request, "Ya has enviado una solicitud para este crucero. Espera nuestra respuesta antes de enviar otra.")
+        return super().form_invalid(form)
+
+    response = super().form_valid(form)
+    subject = f"Nueva solicitud de información para {info.cruise}"
+    message = (
+        f"Se ha recibido una nueva solicitud de información.\n\n"
+        f"Nombre: {info.name}\n"
+        f"Email: {info.email}\n"
+        f"Crucero: {info.cruise}\n"
+        f"Notas: {info.notes}\n"
+        f"Fecha: {info.created_at}"
+    )
+    recipient = ["miguigomez11@gmail.com"]  # Cambia esto por el email real de destino
+    try:
         send_mail(
             subject,
             message,
-            None, 
-            [destinatario],
+            None,  # Usa el DEFAULT_FROM_EMAIL de settings.py
+            recipient,
             fail_silently=False,
         )
-        return super().form_valid(form)
+        messages.success(self.request, "¡Solicitud enviada correctamente! Pronto recibirás información por email.")
+    except BadHeaderError:
+        messages.error(self.request, "Error: Cabecera de email inválida.")
+    except Exception as e:
+        messages.error(self.request, f"Error al enviar el email: {str(e)}")
+    return response
+def form_valid(self, form):
+    from django.core.mail import send_mail
+    destinatario = 'miguigomez11@gmail.com'
+    info = form.save(commit=False)
+    cruise_name = info.cruise.name if info.cruise else 'N/A'
+    subject = f"Nueva solicitud de información de {info.name} para {cruise_name}"
+    message = f"Nombre: {info.name}\nEmail: {info.email}\nCrucero: {cruise_name}\nNotas: {info.notes}"
+    send_mail(
+        subject,
+        message,
+        None, 
+        [destinatario],
+        fail_silently=False,
+    )
+    return super().form_valid(form)
+
+def form_valid(self, form):
+    from django.core.mail import send_mail
+    destinatario = 'miguigomez11@gmail.com'
+    info = form.save(commit=False)
+    cruise_name = info.cruise.name if info.cruise else 'N/A'
+    subject = f"Nueva solicitud de información de {info.name} para {cruise_name}"
+    message = f"Nombre: {info.name}\nEmail: {info.email}\nCrucero: {cruise_name}\nNotas: {info.notes}"
+    send_mail(
+        subject,
+        message,
+        None, 
+        [destinatario],
+        fail_silently=False,
+    )
+    return super().form_valid(form)
 
 # CRUD de destinos
 class DestinationCreateView(generic.CreateView):
@@ -124,7 +193,6 @@ class DestinationDeleteView(generic.DeleteView):
     success_url = reverse_lazy('destinations')
 
 
-@login_required
 @login_required
 def add_review(request, destination_id):
     destination = get_object_or_404(Destination, pk=destination_id)

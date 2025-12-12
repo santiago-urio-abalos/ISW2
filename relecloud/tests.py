@@ -72,6 +72,74 @@ class DestinationPopularityTest(TestCase):
         Review.objects.create(destination=self.dest1, rating=5, comment="Excelente")
         Review.objects.create(destination=self.dest1, rating=4, comment="Muy bueno")
         Review.objects.create(destination=self.dest1, rating=5, comment="Increíble")
+<<<<<<< HEAD
+<<<<<<< HEAD
+        
+        # Anotar con count
+        dest_annotated = Destination.objects.annotate(
+            review_count=Count('reviews')
+        ).get(pk=self.dest1.pk)
+        
+        self.assertEqual(dest_annotated.review_count, 3)
+    
+    def test_destination_without_reviews_has_zero_count(self):
+        """Test: destino sin reviews tiene popularidad = 0"""
+        dest_annotated = Destination.objects.annotate(
+            review_count=Count('reviews')
+        ).get(pk=self.dest3.pk)
+        
+        self.assertEqual(dest_annotated.review_count, 0)
+    
+    def test_average_rating_calculation(self):
+        """Test: cálculo correcto de rating promedio"""
+        # Reviews con ratings 5, 4, 3 -> promedio = 4.0
+        Review.objects.create(destination=self.dest1, rating=5)
+        Review.objects.create(destination=self.dest1, rating=4)
+        Review.objects.create(destination=self.dest1, rating=3)
+        
+        dest_annotated = Destination.objects.annotate(
+            avg_rating=Avg('reviews__rating')
+        ).get(pk=self.dest1.pk)
+        
+        self.assertEqual(dest_annotated.avg_rating, 4.0)
+    
+    def test_destination_without_reviews_has_null_average(self):
+        """Test: destino sin reviews tiene promedio None"""
+        dest_annotated = Destination.objects.annotate(
+            avg_rating=Avg('reviews__rating')
+        ).get(pk=self.dest3.pk)
+        
+        self.assertIsNone(dest_annotated.avg_rating)
+    
+    def test_destinations_ordered_by_popularity(self):
+        """Test: destinos se ordenan correctamente por popularidad"""
+        # París: 3 reviews
+        Review.objects.create(destination=self.dest1, rating=5)
+        Review.objects.create(destination=self.dest1, rating=4)
+        Review.objects.create(destination=self.dest1, rating=5)
+        
+        # Roma: 1 review
+        Review.objects.create(destination=self.dest2, rating=5)
+        
+        # Londres: 0 reviews
+        
+        # Obtener destinos ordenados por popularidad
+        destinations = Destination.objects.annotate(
+            review_count=Count('reviews'),
+            avg_rating=Avg('reviews__rating')
+        ).order_by('-review_count', '-avg_rating')
+        
+        # Verificar orden: París (3), Roma (1), Londres (0)
+        self.assertEqual(destinations[0].name, "París")
+        self.assertEqual(destinations[1].name, "Roma")
+        self.assertEqual(destinations[2].name, "Londres")
+    
+    def test_popularity_with_same_count_different_rating(self):
+        """Test: con mismo # de reviews, ordena por rating promedio"""
+        # París: 2 reviews, promedio 4.5
+=======
+=======
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
         dest_annotated = Destination.objects.annotate(
             review_count=Count('reviews')
         ).get(pk=self.dest1.pk)
@@ -84,6 +152,10 @@ class DestinationPopularityTest(TestCase):
         self.assertEqual(dest_annotated.review_count, 0)
 
     def test_average_rating_calculation(self):
+<<<<<<< HEAD
+>>>>>>> 7f82e1e0 (arreglo de test.spy)
+=======
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
         Review.objects.create(destination=self.dest1, rating=5)
         Review.objects.create(destination=self.dest1, rating=4)
         Review.objects.create(destination=self.dest1, rating=3)
@@ -160,6 +232,12 @@ class DestinationPopularityTest(TestCase):
         end_time = time.time()
         execution_time = end_time - start_time
         self.assertLess(execution_time, 1.0)
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> efece17a (PBI 1: Implementar cálculo de popularidad de destinos basado en reviews)
+=======
+=======
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
 
 # --- Tests para verificar la información de popularidad en el template ---
 class DestinationTemplateTest(TestCase):
@@ -216,3 +294,10 @@ class DestinationTemplateTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '1 review')
         self.assertNotContains(response, '1 reviews')
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> 283f9625 (PBI 2 y 3: Ordenar destinos por popularidad y mostrar info en interfaz)
+=======
+>>>>>>> 7f82e1e0 (arreglo de test.spy)
+=======
+>>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
