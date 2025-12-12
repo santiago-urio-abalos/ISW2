@@ -84,8 +84,6 @@ class CruiseDetailView(DetailView):
         return context
 
 
-<<<<<<< HEAD
-
 from django.core.mail import send_mail, BadHeaderError
 from django.contrib import messages
 
@@ -100,8 +98,6 @@ def get_context_data(self, **kwargs):
     return context
 
 
-=======
->>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
 # Formulario de información
 class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     template_name = 'info_request_create.html'
@@ -158,24 +154,23 @@ def form_valid(self, form):
         fail_silently=False,
     )
     return super().form_valid(form)
-=======
-    def form_valid(self, form):
-        from django.core.mail import send_mail
-        destinatario = 'miguigomez11@gmail.com'
-        info = form.save(commit=False)
-        cruise_name = info.cruise.name if info.cruise else 'N/A'
-        subject = f"Nueva solicitud de información de {info.name} para {cruise_name}"
-        message = f"Nombre: {info.name}\nEmail: {info.email}\nCrucero: {cruise_name}\nNotas: {info.notes}"
-        send_mail(
-            subject,
-            message,
-            None, 
-            [destinatario],
-            fail_silently=False,
-        )
-        return super().form_valid(form)
 
->>>>>>> 9fa6a18a51d59e1fc37fe2a4a8398c30d840d733
+def form_valid(self, form):
+    from django.core.mail import send_mail
+    destinatario = 'miguigomez11@gmail.com'
+    info = form.save(commit=False)
+    cruise_name = info.cruise.name if info.cruise else 'N/A'
+    subject = f"Nueva solicitud de información de {info.name} para {cruise_name}"
+    message = f"Nombre: {info.name}\nEmail: {info.email}\nCrucero: {cruise_name}\nNotas: {info.notes}"
+    send_mail(
+        subject,
+        message,
+        None, 
+        [destinatario],
+        fail_silently=False,
+    )
+    return super().form_valid(form)
+
 # CRUD de destinos
 class DestinationCreateView(generic.CreateView):
     template_name = 'destination_form.html'
