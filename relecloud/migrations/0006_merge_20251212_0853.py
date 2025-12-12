@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('relecloud', '0004_review'),
+        ('relecloud', '0006_review'),
         ('relecloud', '0005_remove_purchase_cruise_alter_purchase_destination'),
     ]
 
