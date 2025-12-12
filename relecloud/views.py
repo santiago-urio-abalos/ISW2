@@ -61,14 +61,15 @@ class CruiseDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Reviews del destino al que pertenece este cruise
-        # En CruiseDetailView
         reviews = Review.objects.filter(destination__in=self.object.destinations.all())
         context['reviews'] = reviews
         context['average_rating'] = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
         return context
 
 
-# Formulario de información
+# --- Email y formulario de información ---
+from django.core.mail import send_mail, BadHeaderError
+from django.contrib import messages
 class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     template_name = 'info_request_create.html'
     model = models.InfoRequest
@@ -76,7 +77,38 @@ class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     success_url = reverse_lazy('index')
     success_message = 'Thank you, %(name)s! We will email you when we have more information about %(cruise)s!'
 
-# CRUD de destinos
+    def form_valid(self, form):
+        info = form.instance
+        # Evitar duplicados: mismo email y crucero
+        if models.InfoRequest.objects.filter(email=info.email, cruise=info.cruise).exists():
+            messages.warning(self.request, "Ya has enviado una solicitud para este crucero. Espera nuestra respuesta antes de enviar otra.")
+            return super().form_invalid(form)
+
+        response = super().form_valid(form)
+        subject = f"Nueva solicitud de información para {info.cruise}"
+        message = (
+            f"Se ha recibido una nueva solicitud de información.\n\n"
+            f"Nombre: {info.name}\n"
+            f"Email: {info.email}\n"
+            f"Crucero: {info.cruise}\n"
+            f"Notas: {info.notes}\n"
+            f"Fecha: {info.created_at}"
+        )
+        recipient = ["miguigomez11@gmail.com"]  # Cambia esto por el email real de destino
+        try:
+            send_mail(
+                subject,
+                message,
+                None,  # Usa el DEFAULT_FROM_EMAIL de settings.py
+                recipient,
+                fail_silently=False,
+            )
+            messages.success(self.request, "¡Solicitud enviada correctamente! Pronto recibirás información por email.")
+        except BadHeaderError:
+            messages.error(self.request, "Error: Cabecera de email inválida.")
+        except Exception as e:
+            messages.error(self.request, f"Error al enviar el email: {str(e)}")
+        return response
 class DestinationCreateView(generic.CreateView):
     template_name = 'destination_form.html'
     model = models.Destination
