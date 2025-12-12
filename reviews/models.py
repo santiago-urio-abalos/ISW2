@@ -13,3 +13,19 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.author} - {self.destination} ({self.rating})"
+
+# Modelo temporal para la tabla antigua
+class OldReview(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    author = models.IntegerField()
+    comment = models.TextField()
+    rating = models.PositiveSmallIntegerField()
+    created_at = models.DateTimeField()
+    destination = models.IntegerField()
+
+    class Meta:
+        db_table = 'relecloud_review'
+        managed = False
+
+    def __str__(self):
+        return f"OldReview {self.id} ({self.rating})"

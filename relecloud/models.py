@@ -89,17 +89,3 @@ class Purchase(models.Model):
 
     def __str__(self):
         return f"{self.user.username} compró {self.destination.name}"
-
-class OldReview(models.Model):
-    author_id = models.IntegerField()
-    comment = models.TextField()
-    rating = models.PositiveSmallIntegerField()
-    created_at = models.DateTimeField()
-    destination_id = models.IntegerField()
-
-    class Meta:
-        db_table = 'relecloud_review'
-        managed = False  # Django no tocará esta tabla con migraciones
-
-    def __str__(self):
-        return f"OldReview {self.id} - {self.destination_id} ({self.rating})"
