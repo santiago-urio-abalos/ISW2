@@ -7,7 +7,7 @@ from django.views.generic import DetailView
 from .models import Destination, Cruise, Purchase
 from reviews.models import Review
 from reviews.forms import ReviewForm
-from django.db.models import Count, Avg, Case
+from django.db.models import Count, Avg, Case, When
 from django.contrib.auth.decorators import login_required
 
 
@@ -146,5 +146,6 @@ def buy_destination(request, destination_id):
         Purchase.objects.create(user=user, destination=destination)
 
     return redirect('destination_detail', pk=destination.id)
+
 
 
