@@ -4,6 +4,9 @@ echo "Instalando dependencias desde requirements.txt..."
 pip install --upgrade pip
 pip install -r /home/site/wwwroot/requirements.txt
 
+echo "Aplicando migraciones..."
+python /home/site/wwwroot/manage.py migrate --noinput
+
 echo "Iniciando servidor gunicorn..."
 python /home/site/wwwroot/manage.py collectstatic --noinput
 gunicorn --bind=0.0.0.0:8000 proyect.wsgi:application
