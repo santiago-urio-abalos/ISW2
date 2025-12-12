@@ -1,10 +1,11 @@
+
 from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from django.core import mail
 from django.db.models import Count, Avg
 from django.utils import timezone
 from .models import Cruise, InfoRequest, Destination, Review
-
+# Cambio mínimo para permitir PR
 # --- Tests para el formulario info_request ---
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class InfoRequestFormTests(TestCase):
